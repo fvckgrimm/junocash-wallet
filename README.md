@@ -201,7 +201,7 @@ The wallet communicates with `junocashd` via JSON-RPC:
 
 For issues and feature requests, please use the GitHub issue tracker.
 
-For general questions, join our community channels:
-- Discord: [link]
-- Telegram: [link]
-- Forum: [link]
+For general questions, join the junocash discord server:
+- Discord: [discord.gg/junocash](discord.gg/junocash)
+
+or reach me via wtv links on my site 
