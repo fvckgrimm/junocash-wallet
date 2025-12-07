@@ -4,6 +4,7 @@ import Send from '../views/Send.vue';
 import Receive from '../views/Receive.vue';
 import Mining from '../views/Mining.vue';
 import Settings from '../views/Settings.vue';
+import History from '../views/History.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,6 +14,7 @@ const router = createRouter({
     { path: '/receive', component: Receive },
     { path: '/mining', component: Mining },
     { path: '/settings', component: Settings },
+    { path: '/history', component: History },
   ]
 });
 
