@@ -1,12 +1,11 @@
-use crate::state::NodeState; // Import the struct
+use crate::state::NodeState;
 use std::path::PathBuf;
 use std::process::Command;
-use tauri::{command, State}; // Import State
+use tauri::{command, State};
 
 #[command]
 pub fn get_default_juno_paths() -> serde_json::Value {
     let home = dirs::home_dir().unwrap_or(PathBuf::from("/"));
-
     let (default_bin, default_data) = if cfg!(target_os = "windows") {
         (
             "junocashd.exe".to_string(),
@@ -29,7 +28,6 @@ pub fn get_default_juno_paths() -> serde_json::Value {
             home.join(".junocash").to_string_lossy().to_string(),
         )
     };
-
     serde_json::json!({
         "binary": default_bin,
         "data_dir": default_data
@@ -43,40 +41,41 @@ pub async fn launch_node(
     rpc_port: u16,
     rpc_user: String,
     rpc_pass: String,
-    state: State<'_, NodeState>, // <--- Inject State
+    randomx_fast_mode: bool, // <--- NEW PARAMETER
+    state: State<'_, NodeState>,
 ) -> Result<String, String> {
     let bin = PathBuf::from(&bin_path);
     if !bin.exists() {
         return Err(format!("Binary not found at: {}", bin_path));
     }
 
-    // Check if we already have a handle (optional safety)
     let mut guard = state.process.lock().unwrap();
     if guard.is_some() {
         return Ok("Node is already running (managed by wallet)".into());
     }
 
-    let child = Command::new(bin)
-        .arg(format!("-datadir={}", data_dir))
+    let mut cmd = Command::new(bin);
+    cmd.arg(format!("-datadir={}", data_dir))
         .arg(format!("-rpcport={}", rpc_port))
         .arg(format!("-rpcuser={}", rpc_user))
         .arg(format!("-rpcpassword={}", rpc_pass))
-        .arg("-daemon=0")
-        .spawn()
-        .map_err(|e| format!("Failed to start: {}", e))?;
+        .arg("-daemon=0");
 
-    // Store the process handle so we can kill it later
+    // Add RandomX fast mode flag if enabled
+    if randomx_fast_mode {
+        cmd.arg("-randomxfastmode");
+    }
+
+    let child = cmd.spawn().map_err(|e| format!("Failed to start: {}", e))?;
+
     *guard = Some(child);
-
     Ok("Node started".into())
 }
 
 #[command]
 pub async fn stop_node(state: State<'_, NodeState>) -> Result<String, String> {
     let mut guard = state.process.lock().unwrap();
-
     if let Some(mut child) = guard.take() {
-        // Kill the process
         child
             .kill()
             .map_err(|e| format!("Failed to kill node: {}", e))?;

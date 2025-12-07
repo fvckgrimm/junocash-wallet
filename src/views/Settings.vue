@@ -121,7 +121,41 @@
           </div>
         </div>
 
-        <!-- SECTION 3: ACTIONS -->
+        <!-- SECTION 3: PERFORMANCE OPTIONS -->
+        <div class="space-y-5">
+           <div class="flex items-center gap-3 border-b border-white/5 pb-2">
+            <div class="p-1.5 bg-purple-500/20 rounded text-purple-400">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <h2 class="text-sm font-bold text-gray-200 uppercase tracking-wider">Mining Performance</h2>
+          </div>
+
+          <div class="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <h3 class="text-sm font-bold text-white">RandomX Fast Mode</h3>
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 rounded">Requires 2GB RAM</span>
+              </div>
+              <p class="text-xs text-gray-400 leading-relaxed max-w-2xl">
+                Uses a large lookup table (~2GB) for faster mining. Significantly improves hashrate but increases memory usage. Only applies when launching the node from this wallet.
+              </p>
+            </div>
+            
+            <!-- Toggle Switch -->
+            <button 
+              @click="randomxFastMode = !randomxFastMode"
+              class="ml-4 w-12 h-6 rounded-full p-1 transition-colors duration-300 ease-in-out relative flex-shrink-0"
+              :class="randomxFastMode ? 'bg-purple-600' : 'bg-gray-700'"
+            >
+              <div 
+                class="w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300"
+                :class="randomxFastMode ? 'translate-x-6' : 'translate-x-0'"
+              ></div>
+            </button>
+          </div>
+        </div>
+
+        <!-- SECTION 4: ACTIONS -->
         <div class="pt-4 border-t border-white/5 space-y-4">
           
           <div class="flex flex-col sm:flex-row gap-4">
@@ -184,6 +218,7 @@ const binPath = ref('');
 const dataDir = ref('');
 const rpcUser = ref('');
 const rpcPass = ref('');
+const randomxFastMode = ref(false); // <--- NEW
 const showPass = ref(false);
 
 // UI State
@@ -200,6 +235,7 @@ onMounted(async () => {
   dataDir.value = node.dataDir;
   rpcUser.value = node.rpcUser;
   rpcPass.value = node.rpcPass;
+  randomxFastMode.value = node.randomxFastMode; // <--- NEW
 });
 
 // Actions
@@ -218,7 +254,8 @@ async function saveToStore() {
     binPath.value, 
     dataDir.value,
     rpcUser.value,
-    rpcPass.value
+    rpcPass.value,
+    randomxFastMode.value // <--- NEW
   );
 }
 
@@ -245,10 +282,11 @@ async function launchNode() {
       dataDir: dataDir.value,
       rpcPort: node.rpcPort,
       rpcUser: node.rpcUser,
-      rpcPass: node.rpcPass
+      rpcPass: node.rpcPass,
+      randomxFastMode: randomxFastMode.value // <--- NEW
     });
     
-    setStatus('success', "Node launch command sent successfully. Establishing connection...");
+    setStatus('success', `Node launch command sent${randomxFastMode.value ? ' with RandomX Fast Mode' : ''}. Establishing connection...`);
     
     // Attempt to verify connection shortly after
     setTimeout(() => {
@@ -278,3 +316,15 @@ async function connectOnly() {
   }
 }
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
