@@ -49,6 +49,33 @@
           <p class="relative z-10 text-sm text-gray-500 mt-2 max-w-xs">
             {{ isMining ? 'Allocating CPU cycles to proof-of-work consensus.' : 'Start the miner to begin generating hashes.' }}
           </p>
+
+          <!-- Thread Configuration (only visible when stopped) -->
+          <div v-if="!isMining" class="relative z-10 mt-6 w-full max-w-xs">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">CPU Threads</label>
+            <div class="flex items-center gap-3">
+              <input 
+                type="range" 
+                v-model.number="selectedThreads" 
+                :min="1" 
+                :max="maxThreads"
+                class="flex-1 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              />
+              <div class="w-16 text-center">
+                <span class="text-lg font-bold text-white font-mono">{{ selectedThreads === -1 ? 'Auto' : selectedThreads }}</span>
+              </div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-600 mt-1">
+              <span>1 Core</span>
+              <button 
+                @click="selectedThreads = -1" 
+                class="text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Auto
+              </button>
+              <span>{{ maxThreads }} Cores</span>
+            </div>
+          </div>
         </div>
 
         <!-- LOCAL PERFORMANCE CARD -->
@@ -80,11 +107,13 @@
           <div class="grid grid-cols-2 gap-4">
              <div class="bg-white/[0.03] p-3 rounded-xl border border-white/5">
                <p class="text-[10px] text-gray-500 uppercase">Algorithm</p>
-               <p class="text-sm font-bold text-gray-300 mt-0.5">RandomX</p>
+               <p class="text-sm font-bold text-gray-300 mt-0.5">Equihash</p>
              </div>
              <div class="bg-white/[0.03] p-3 rounded-xl border border-white/5">
-               <p class="text-[10px] text-gray-500 uppercase">Threads</p>
-               <p class="text-sm font-bold text-gray-300 mt-0.5">Auto (All)</p>
+               <p class="text-[10px] text-gray-500 uppercase">Active Threads</p>
+               <p class="text-sm font-bold text-gray-300 mt-0.5">
+                 {{ isMining ? (selectedThreads === -1 ? `~${Math.floor(maxThreads / 2)}` : selectedThreads) : '0' }}
+               </p>
              </div>
           </div>
         </div>
@@ -218,6 +247,10 @@ const shieldToAddress = ref('');
 const isShielding = ref(false);
 const lastOperation = ref('');
 
+// Thread configuration
+const maxThreads = ref(navigator.hardwareConcurrency || 4);
+const selectedThreads = ref(-1); // -1 = auto (uses ~half)
+
 // Data State
 const miningInfo = reactive({
   localsolps: 0,
@@ -274,7 +307,7 @@ async function toggleMining() {
   try {
     await invoke('set_mining', {
       enabled: newState, 
-      threads: -1, 
+      threads: selectedThreads.value, 
       port: node.rpcPort, 
       user: node.rpcUser, 
       pass: node.rpcPass
@@ -357,5 +390,31 @@ onUnmounted(() => {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Custom range slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #a855f7;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #a855f7;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
 }
 </style>
