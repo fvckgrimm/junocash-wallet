@@ -1,16 +1,29 @@
 <template>
-  <div class="flex h-screen w-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
-    <!-- Left Sidebar -->
-    <Sidebar />
+  <div class="flex h-screen w-screen bg-[var(--color-bg-deep)] text-gray-200 font-sans overflow-hidden relative selection:bg-indigo-500/30">
+    
+    <!-- Ambient Background Effects (The "Exodus" Vibe) -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/20 rounded-full blur-[120px]"></div>
+      <div class="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[120px]"></div>
+    </div>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 overflow-y-auto">
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
-    </main>
+    <!-- Layout Container -->
+    <div class="relative z-10 flex w-full h-full">
+      <!-- Left Sidebar -->
+      <Sidebar />
+
+      <!-- Main Content Area -->
+      <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <!-- Scrollable Content Wrapper -->
+        <div class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-8">
+          <router-view v-slot="{ Component }">
+            <transition name="page" mode="out-in">
+              <component :is="Component" />
+            </transition>
+          </router-view>
+        </div>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -27,11 +40,9 @@ const wallet = useWalletStore();
 onMounted(async () => {
   // Load saved node settings (paths)
   await node.loadSettings();
-
-  // Start polling wallet data
-  // Note: This will only succeed if the node is running.
-  // The 'Status' component in the Sidebar handles the visualization of connection state.
-  wallet.startPolling(10000); // Poll every 10s
+  
+  // Start polling
+  wallet.startPolling(10000); 
 });
 </script>
 

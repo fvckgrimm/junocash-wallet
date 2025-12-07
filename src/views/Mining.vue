@@ -1,110 +1,203 @@
 <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-bold mb-6">Mining Dashboard</h1>
-
-    <!-- 1. Statistics Grid -->
-    <!-- Adjusted grid to fit 5 items on extra large screens -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-      
-      <!-- Status -->
-      <div class="bg-white p-4 rounded shadow border-l-4" :class="isMining ? 'border-green-500' : 'border-red-500'">
-        <div class="text-xs text-gray-500 uppercase font-bold">Status</div>
-        <div class="text-xl font-bold flex items-center gap-2">
-          <div :class="isMining ? 'bg-green-500 animate-pulse' : 'bg-red-500'" class="w-3 h-3 rounded-full"></div>
-          {{ isMining ? 'Running' : 'Stopped' }}
-        </div>
+  <div class="h-full flex flex-col p-2 space-y-6 max-w-7xl mx-auto w-full">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between px-2 animate-fade-in">
+      <div>
+        <h1 class="text-2xl font-bold text-white tracking-tight">Mining Node</h1>
+        <p class="text-gray-400 text-sm">Contribute CPU power to secure the network and earn rewards.</p>
       </div>
-
-      <!-- My Hashrate -->
-      <div class="bg-white p-4 rounded shadow border-l-4 border-blue-500">
-        <div class="text-xs text-gray-500 uppercase font-bold">My Hashrate</div>
-        <div class="text-xl font-bold text-gray-800">
-          {{ formatHashrate(miningInfo.localsolps) }}
-        </div>
+      <div class="flex items-center gap-2 px-3 py-1 rounded-full border" 
+           :class="isMining ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-gray-800/50 border-white/5 text-gray-500'">
+        <div class="w-2 h-2 rounded-full" :class="isMining ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'"></div>
+        <span class="text-xs font-bold uppercase tracking-wider">{{ isMining ? 'Online' : 'Standby' }}</span>
       </div>
-
-      <!-- Network Hashrate -->
-      <div class="bg-white p-4 rounded shadow border-l-4 border-purple-500">
-        <div class="text-xs text-gray-500 uppercase font-bold">Network Hashrate</div>
-        <div class="text-xl font-bold text-gray-800">
-          {{ formatHashrate(miningInfo.networksolps) }}
-        </div>
-      </div>
-
-      <!-- Difficulty -->
-      <div class="bg-white p-4 rounded shadow border-l-4 border-yellow-500">
-        <div class="text-xs text-gray-500 uppercase font-bold">Difficulty</div>
-        <div class="text-xl font-bold text-gray-800">
-          {{ formatDiff(miningInfo.difficulty) }}
-        </div>
-      </div>
-
-      <!-- Block Reward (New) -->
-      <div class="bg-white p-4 rounded shadow border-l-4 border-indigo-500">
-        <div class="text-xs text-gray-500 uppercase font-bold">Block Reward</div>
-        <div class="text-xl font-bold text-gray-800">
-          {{ miningInfo.reward }} JUNO
-        </div>
-        <div class="text-[10px] text-gray-400 font-mono">Height: {{ miningInfo.blocks }}</div>
-      </div>
-
     </div>
 
-    <!-- 2. Controls Area -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
       
-      <!-- Mining Toggle -->
-      <div class="bg-white p-6 rounded shadow">
-        <h2 class="text-lg font-bold mb-4 text-gray-700">Control Miner</h2>
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-gray-500">
-            Algorithm: RandomX (CPU) <br> Threads: All Available
-          </p>
+      <!-- LEFT COLUMN: The "Rig" (Controls & Local Stats) -->
+      <div class="lg:col-span-5 flex flex-col gap-6 animate-slide-up">
+        
+        <!-- MAIN CONTROL CARD -->
+        <div class="glass rounded-3xl p-8 relative overflow-hidden flex flex-col items-center justify-center text-center transition-all duration-500"
+             :class="isMining ? 'border-purple-500/30 shadow-[0_0_50px_rgba(147,51,234,0.1)]' : 'border-white/5'">
+          
+          <!-- Background Ambient Glow -->
+          <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 transition-opacity duration-1000" :class="{ 'opacity-100': isMining }"></div>
+          
+          <!-- POWER BUTTON -->
           <button 
-            @click="toggleMining" 
-            class="px-8 py-3 rounded font-bold transition-colors shadow-sm"
-            :class="isMining ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-green-600 text-white hover:bg-green-700'"
+            @click="toggleMining"
+            class="relative z-10 w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 group"
+            :class="isMining ? 'bg-gray-900 shadow-[0_0_40px_rgba(168,85,247,0.6)] scale-105' : 'bg-white/5 hover:bg-white/10 shadow-xl active:scale-95'"
           >
-            {{ isMining ? 'Stop Mining' : 'Start Mining' }}
+            <!-- Spinning Ring when active -->
+            <div class="absolute inset-0 rounded-full border-2 border-dashed border-purple-500/50 animate-spin-slow" v-if="isMining"></div>
+            
+            <!-- Icon -->
+            <svg class="w-12 h-12 transition-colors duration-300" 
+                 :class="isMining ? 'text-purple-400 drop-shadow-[0_0_10px_rgba(168,85,247,1)]' : 'text-gray-400 group-hover:text-white'"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </button>
+
+          <h2 class="relative z-10 mt-6 text-xl font-bold text-white transition-all duration-300" :class="{ 'text-purple-300': isMining }">
+            {{ isMining ? 'Mining Active' : 'Miner Stopped' }}
+          </h2>
+          <p class="relative z-10 text-sm text-gray-500 mt-2 max-w-xs">
+            {{ isMining ? 'Allocating CPU cycles to proof-of-work consensus.' : 'Start the miner to begin generating hashes.' }}
+          </p>
         </div>
+
+        <!-- LOCAL PERFORMANCE CARD -->
+        <div class="glass rounded-2xl p-6 border border-white/5 flex-1 flex flex-col justify-center">
+          <div class="flex items-center gap-3 mb-6">
+             <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+               <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
+             </div>
+             <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wide">CPU Performance</h3>
+          </div>
+
+          <!-- Large Hashrate Display -->
+          <div class="mb-6">
+            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">My Hashrate</p>
+            <div class="flex items-baseline gap-2">
+              <span class="text-4xl font-mono font-bold text-white tracking-tighter transition-all duration-300" :class="{ 'opacity-50 blur-sm': !isMining }">
+                 {{ formatHashrateNumber(miningInfo.localsolps) }}
+              </span>
+              <span class="text-lg text-gray-500 font-medium">{{ formatHashrateUnit(miningInfo.localsolps) }}</span>
+            </div>
+            <!-- Fake visualizer bar -->
+            <div class="mt-4 h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-full bg-blue-500 rounded-full transition-all duration-1000" 
+                   :class="{ 'animate-pulse': isMining }"
+                   :style="{ width: isMining ? '60%' : '0%' }"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+             <div class="bg-white/[0.03] p-3 rounded-xl border border-white/5">
+               <p class="text-[10px] text-gray-500 uppercase">Algorithm</p>
+               <p class="text-sm font-bold text-gray-300 mt-0.5">RandomX</p>
+             </div>
+             <div class="bg-white/[0.03] p-3 rounded-xl border border-white/5">
+               <p class="text-[10px] text-gray-500 uppercase">Threads</p>
+               <p class="text-sm font-bold text-gray-300 mt-0.5">Auto (All)</p>
+             </div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- Shielding Settings -->
-      <div class="bg-gray-800 text-white p-6 rounded shadow">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h2 class="font-bold text-lg">Auto-Shielding</h2>
-            <p class="text-xs text-gray-400 mt-1">Shield coinbase rewards to spend them.</p>
+      <!-- RIGHT COLUMN: Network & Privacy -->
+      <div class="lg:col-span-7 flex flex-col gap-6 animate-slide-up" style="animation-delay: 100ms;">
+        
+        <!-- NETWORK STATS GRID -->
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Network Hash -->
+          <div class="glass p-5 rounded-2xl border border-white/5 hover:bg-white/[0.02] transition-colors">
+            <div class="text-xs text-gray-500 font-bold uppercase mb-2">Network Hashrate</div>
+            <div class="text-xl font-mono font-bold text-indigo-300">
+              {{ formatHashrate(miningInfo.networksolps) }}
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <input type="checkbox" id="autoshield" v-model="autoShieldEnabled" class="w-4 h-4 accent-purple-500" />
-            <label for="autoshield" class="cursor-pointer select-none text-sm">Enable (5m)</label>
+          
+          <!-- Difficulty -->
+          <div class="glass p-5 rounded-2xl border border-white/5 hover:bg-white/[0.02] transition-colors">
+            <div class="text-xs text-gray-500 font-bold uppercase mb-2">Difficulty</div>
+            <div class="text-xl font-mono font-bold text-amber-300">
+              {{ formatDiff(miningInfo.difficulty) }}
+            </div>
+          </div>
+
+          <!-- Block Height -->
+          <div class="glass p-5 rounded-2xl border border-white/5 hover:bg-white/[0.02] transition-colors">
+            <div class="text-xs text-gray-500 font-bold uppercase mb-2">Block Height</div>
+            <div class="text-xl font-mono font-bold text-emerald-300">
+              {{ miningInfo.blocks.toLocaleString() }}
+            </div>
+          </div>
+
+          <!-- Reward -->
+          <div class="glass p-5 rounded-2xl border border-white/5 hover:bg-white/[0.02] transition-colors">
+            <div class="text-xs text-gray-500 font-bold uppercase mb-2">Block Reward</div>
+            <div class="text-xl font-mono font-bold text-pink-300">
+              {{ miningInfo.reward }} JUNO
+            </div>
           </div>
         </div>
 
-        <div class="mb-4">
-          <select v-model="shieldToAddress" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-xs font-mono text-white focus:outline-none focus:border-purple-500">
-            <option value="" disabled>Select Shield-To Address...</option>
-            <option v-for="addr in wallet.addresses" :key="addr" :value="addr">
-              {{ addr }}
-            </option>
-          </select>
+        <!-- AUTO-SHIELDING CONSOLE -->
+        <div class="flex-1 glass rounded-2xl border border-white/5 p-6 flex flex-col">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white">Auto-Shielding</h3>
+                <p class="text-xs text-gray-400">Automated privacy for mined coins.</p>
+              </div>
+            </div>
+            
+            <!-- Toggle Switch -->
+            <button 
+              @click="autoShieldEnabled = !autoShieldEnabled"
+              class="w-12 h-6 rounded-full p-1 transition-colors duration-300 ease-in-out relative"
+              :class="autoShieldEnabled ? 'bg-indigo-600' : 'bg-gray-700'"
+            >
+              <div 
+                class="w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300"
+                :class="autoShieldEnabled ? 'translate-x-6' : 'translate-x-0'"
+              ></div>
+            </button>
+          </div>
+
+          <div class="flex-1 flex flex-col gap-4">
+             <!-- Target Address Selector -->
+             <div class="relative group">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Destination Shielded Address</label>
+                <div class="relative">
+                  <select 
+                    v-model="shieldToAddress" 
+                    class="w-full appearance-none bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm font-mono text-gray-300 focus:outline-none focus:border-indigo-500/50 focus:bg-black/40 transition-colors cursor-pointer"
+                  >
+                    <option value="" disabled>Select Address...</option>
+                    <option v-for="addr in wallet.addresses" :key="addr" :value="addr">{{ addr }}</option>
+                  </select>
+                  <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                  </div>
+                </div>
+             </div>
+
+             <!-- Console Log Output -->
+             <div class="mt-auto bg-black/40 rounded-xl p-4 border border-white/5 font-mono text-xs h-24 overflow-y-auto custom-scrollbar flex flex-col-reverse">
+                <div v-if="lastOperation" class="text-emerald-400">
+                  <span class="text-gray-600">[{{ new Date().toLocaleTimeString() }}]</span> Success: OpID {{ lastOperation.substring(0, 12) }}...
+                </div>
+                <div v-if="isShielding" class="text-indigo-400 animate-pulse">
+                  <span class="text-gray-600">[{{ new Date().toLocaleTimeString() }}]</span> Initiating shielding transaction...
+                </div>
+                <div v-if="autoShieldEnabled" class="text-gray-500">
+                   <span class="text-gray-600">[{{ new Date().toLocaleTimeString() }}]</span> Service active. Monitoring coinbase...
+                </div>
+                <div class="text-gray-600 italic">System ready.</div>
+             </div>
+
+             <button 
+                @click="performShield"
+                :disabled="!shieldToAddress || isShielding"
+                class="w-full py-2.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-bold text-gray-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+             >
+                Trigger Manual Shield
+             </button>
+          </div>
         </div>
 
-        <button 
-          @click="performShield" 
-          :disabled="!shieldToAddress || isShielding"
-          class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded disabled:opacity-50 disabled:cursor-not-allowed transition"
-        >
-          {{ isShielding ? 'Shielding...' : 'Shield Now (Manual)' }}
-        </button>
-
-        <div class="mt-3 text-[10px] font-mono text-gray-400 break-all" v-if="lastOperation">
-          Last Op: {{ lastOperation }}
-        </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -130,8 +223,8 @@ const miningInfo = reactive({
   localsolps: 0,
   networksolps: 0,
   difficulty: 0,
-  blocks: 0,  // Added Block Height
-  reward: 0,  // Added Block Reward
+  blocks: 0,
+  reward: 0,
   generate: false
 });
 
@@ -140,16 +233,17 @@ let shieldInterval: any = null;
 
 onMounted(async () => {
   await wallet.fetchAddresses();
+  // Auto-select first unified address
   const uni = wallet.addresses.find(a => a.startsWith('j1'));
   if (uni) shieldToAddress.value = uni;
+  else if (wallet.addresses.length > 0) shieldToAddress.value = wallet.addresses[0];
 
   await fetchMiningInfo();
-  statsInterval = setInterval(fetchMiningInfo, 5000); // Poll every 5s (2s is a bit aggressive for subsidy checks)
+  statsInterval = setInterval(fetchMiningInfo, 5000); 
 });
 
 async function fetchMiningInfo() {
   try {
-    // 1. Get General Info (includes 'blocks')
     const res = await invoke<any>('get_mining_info', {
       port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
     });
@@ -161,7 +255,6 @@ async function fetchMiningInfo() {
     miningInfo.generate = res.generate || false;
     isMining.value = res.generate;
 
-    // 2. If we have a block height, fetch the subsidy for it
     if (miningInfo.blocks > 0) {
       const subsidy = await invoke<number>('get_block_subsidy', {
         height: miningInfo.blocks,
@@ -169,15 +262,14 @@ async function fetchMiningInfo() {
       });
       miningInfo.reward = subsidy;
     }
-
   } catch (e) {
-    // console.error(e);
+    // Silent fail for polling
   }
 }
 
 async function toggleMining() {
   const newState = !isMining.value;
-  isMining.value = newState; 
+  isMining.value = newState; // Optimistic update
   
   try {
     await invoke('set_mining', {
@@ -187,29 +279,27 @@ async function toggleMining() {
       user: node.rpcUser, 
       pass: node.rpcPass
     });
-    setTimeout(fetchMiningInfo, 500);
+    setTimeout(fetchMiningInfo, 1000);
   } catch(e) {
     console.error(e);
-    isMining.value = !newState; 
+    isMining.value = !newState; // Revert on error
   }
 }
 
-// ... (Shielding logic stays same) ...
+// Watcher for Auto-Shielding
 watch(autoShieldEnabled, (enabled) => {
   if (enabled) {
     shieldInterval = setInterval(() => {
         if(isMining.value) performShield();
-    }, 300000); 
+    }, 300000); // 5 minutes
   } else {
     clearInterval(shieldInterval);
   }
 });
 
 async function performShield() {
-  if (!shieldToAddress.value) {
-    alert("Please select a Shield-To address.");
-    return;
-  }
+  if (!shieldToAddress.value) return;
+  
   isShielding.value = true;
   try {
     const opId = await invoke<string>('shield_coinbase', {
@@ -224,18 +314,33 @@ async function performShield() {
   }
 }
 
+// Formatters
 function formatHashrate(val: number) {
   if (!val) return '0 H/s';
-  if (val >= 1_000_000) return (val / 1_000_000).toFixed(3) + ' MH/s';
-  if (val >= 1_000) return (val / 1_000).toFixed(3) + ' kH/s';
+  if (val >= 1_000_000) return (val / 1_000_000).toFixed(2) + ' MH/s';
+  if (val >= 1_000) return (val / 1_000).toFixed(2) + ' kH/s';
   return val.toFixed(2) + ' H/s';
+}
+
+// Splitters for the large UI display
+function formatHashrateNumber(val: number) {
+  if (!val) return '0.00';
+  if (val >= 1_000_000) return (val / 1_000_000).toFixed(2);
+  if (val >= 1_000) return (val / 1_000).toFixed(2);
+  return val.toFixed(2);
+}
+
+function formatHashrateUnit(val: number) {
+  if (!val) return 'H/s';
+  if (val >= 1_000_000) return 'MH/s';
+  if (val >= 1_000) return 'kH/s';
+  return 'H/s';
 }
 
 function formatDiff(val: number) {
   if (!val) return '0';
   if (val >= 1_000_000) return (val / 1_000_000).toFixed(2) + 'M';
-  if (val >= 1_000) return (val / 1_000).toFixed(2) + 'k';
-  return val.toFixed(2);
+  return val.toLocaleString();
 }
 
 onUnmounted(() => {
@@ -243,3 +348,14 @@ onUnmounted(() => {
   clearInterval(shieldInterval);
 });
 </script>
+
+<style scoped>
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>
