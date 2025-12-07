@@ -99,6 +99,8 @@ fn main() {
             wallet::get_block_count,
             wallet::get_all_addresses,
             wallet::get_spendable_addresses,
+            wallet::get_operation_status,
+            wallet::get_blockchain_info,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

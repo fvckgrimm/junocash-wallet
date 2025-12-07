@@ -54,6 +54,18 @@ pub async fn get_all_addresses(port: u16, user: String, pass: String) -> Result<
 }
 
 #[command]
+pub async fn get_operation_status(port: u16, user: String, pass: String) -> Result<Value, String> {
+    // z_getoperationresult returns the result AND removes it from the node's memory list
+    call_rpc("z_getoperationresult", vec![], port, &user, &pass).await
+}
+
+#[command]
+pub async fn get_blockchain_info(port: u16, user: String, pass: String) -> Result<Value, String> {
+    // Returns detailed info including 'verificationprogress', 'blocks', 'headers'
+    call_rpc("getblockchaininfo", vec![], port, &user, &pass).await
+}
+
+#[command]
 pub async fn get_spendable_addresses(
     port: u16,
     user: String,

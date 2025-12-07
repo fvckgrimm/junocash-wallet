@@ -30,6 +30,15 @@ export interface TxTarget {
   memo?: string;
 }
 
+interface OpResult {
+  id: string;
+  status: 'queued' | 'executing' | 'success' | 'failed';
+  error?: { message: string };
+  result?: { txid: string };
+  creation_time: number;
+}
+
+
 export const useWalletStore = defineStore('wallet', {
   state: () => ({
     balance: {
@@ -42,6 +51,7 @@ export const useWalletStore = defineStore('wallet', {
     lastError: null as string | null,
     addresses: [] as string[],
     spendableAddresses: [] as SpendableAddress[],
+    notifications: [] as OpResult[],
   }),
 
   getters: {
@@ -121,6 +131,32 @@ export const useWalletStore = defineStore('wallet', {
       }
     },
 
+    async checkOperations() {
+      const node = useNodeStore();
+      if (!node.isConnected) return;
+
+      try {
+        // z_getoperationresult returns ONLY finished operations (success or failed)
+        const res = await invoke<OpResult[]>('get_operation_status', {
+          port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
+        });
+
+        if (Array.isArray(res) && res.length > 0) {
+          // Add to our notifications list to show the user
+          // You might want to sort by time or filter duplicates
+          this.notifications.unshift(...res);
+
+          // If we found a success, trigger a balance refresh
+          if (res.some(op => op.status === 'success')) {
+            this.fetchBalance();
+            this.fetchTransactions();
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    },
+
     async fetchTransactions() {
       const node = useNodeStore();
       if (!node.isConnected) return;
@@ -174,13 +210,15 @@ export const useWalletStore = defineStore('wallet', {
     },
 
     // A polling helper to keep UI updated
-    startPolling(intervalMs = 10000) {
+    startPolling(intervalMs = 5000) {
       this.fetchBalance();
       this.fetchTransactions();
+      this.fetchSpendableAddresses();
 
       const interval = setInterval(() => {
         this.fetchBalance();
         this.fetchTransactions();
+        this.checkOperations();
       }, intervalMs);
 
       return () => clearInterval(interval); // Return cleanup function
