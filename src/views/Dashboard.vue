@@ -7,16 +7,37 @@
         <h1 class="text-2xl font-bold text-white tracking-tight">Portfolio Overview</h1>
         <p class="text-gray-400 text-sm mt-1">Welcome back to your private bank.</p>
       </div>
-      <button 
-        @click="refreshData" 
-        class="group flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-all active:scale-95"
-        :disabled="isRefreshing"
-      >
-        <span class="text-indigo-400 group-hover:text-indigo-300 transition-colors" :class="{ 'animate-spin': isRefreshing }">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
-        </span>
-        <span class="text-sm font-medium text-gray-300">{{ isRefreshing ? 'Syncing...' : 'Refresh' }}</span>
-      </button>
+      <div class="flex items-center gap-3">
+        <!-- Balance Visibility Toggle -->
+        <button 
+          @click="balancesVisible = !balancesVisible" 
+          class="group flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-all active:scale-95"
+          :title="balancesVisible ? 'Hide balances' : 'Show balances'"
+        >
+          <span class="text-indigo-400 group-hover:text-indigo-300 transition-colors">
+            <svg v-if="balancesVisible" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </span>
+        </button>
+        
+        <!-- Refresh Button -->
+        <button 
+          @click="refreshData" 
+          class="group flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-all active:scale-95"
+          :disabled="isRefreshing"
+        >
+          <span class="text-indigo-400 group-hover:text-indigo-300 transition-colors" :class="{ 'animate-spin': isRefreshing }">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+          </span>
+          <span class="text-sm font-medium text-gray-300">{{ isRefreshing ? 'Syncing...' : 'Refresh' }}</span>
+        </button>
+      </div>
     </header>
 
     <!-- Balance Cards Grid -->
@@ -32,9 +53,14 @@
           <div>
             <h3 class="text-indigo-200 font-medium text-sm uppercase tracking-wider mb-1">Total Balance</h3>
             <div class="flex items-baseline gap-2">
-              <span class="text-5xl font-bold text-white tracking-tighter">
-                {{ displayBalance.whole }}<span class="text-3xl text-indigo-300/70">.{{ displayBalance.decimal }}</span>
-              </span>
+              <transition name="balance-fade" mode="out-in">
+                <span v-if="balancesVisible" key="visible" class="text-5xl font-bold text-white tracking-tighter">
+                  {{ displayBalance.whole }}<span class="text-3xl text-indigo-300/70">.{{ displayBalance.decimal }}</span>
+                </span>
+                <span v-else key="hidden" class="text-5xl font-bold text-white tracking-tighter">
+                  ••••<span class="text-3xl text-indigo-300/70">.••••</span>
+                </span>
+              </transition>
               <span class="text-xl font-bold text-indigo-400">JUNO</span>
             </div>
           </div>
@@ -70,9 +96,14 @@
             </div>
             <span class="text-sm text-gray-300 font-medium">Shielded</span>
           </div>
-          <p class="text-2xl font-bold text-white font-mono tracking-tight">
-            {{ wallet.balance.private.toFixed(4) }}
-          </p>
+          <transition name="balance-fade" mode="out-in">
+            <p v-if="balancesVisible" key="visible" class="text-2xl font-bold text-white font-mono tracking-tight">
+              {{ wallet.balance.private.toFixed(4) }}
+            </p>
+            <p v-else key="hidden" class="text-2xl font-bold text-white font-mono tracking-tight">
+              ••••.••••
+            </p>
+          </transition>
         </div>
 
         <!-- Transparent Card -->
@@ -86,9 +117,14 @@
             </div>
             <span class="text-sm text-gray-300 font-medium">Transparent</span>
           </div>
-          <p class="text-2xl font-bold text-white font-mono tracking-tight">
-            {{ wallet.balance.transparent.toFixed(4) }}
-          </p>
+          <transition name="balance-fade" mode="out-in">
+            <p v-if="balancesVisible" key="visible" class="text-2xl font-bold text-white font-mono tracking-tight">
+              {{ wallet.balance.transparent.toFixed(4) }}
+            </p>
+            <p v-else key="hidden" class="text-2xl font-bold text-white font-mono tracking-tight">
+              ••••.••••
+            </p>
+          </transition>
         </div>
 
       </div>
@@ -142,9 +178,14 @@
 
               <!-- Amount -->
               <div class="text-right">
-                <p class="font-bold text-lg tracking-tight font-mono" :class="tx.amount > 0 ? 'text-emerald-400' : 'text-gray-200'">
-                  {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount }} <span class="text-sm font-sans font-medium text-gray-500">JUNO</span>
-                </p>
+                <transition name="balance-fade" mode="out-in">
+                  <p v-if="balancesVisible" key="visible" class="font-bold text-lg tracking-tight font-mono" :class="tx.amount > 0 ? 'text-emerald-400' : 'text-gray-200'">
+                    {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount }} <span class="text-sm font-sans font-medium text-gray-500">JUNO</span>
+                  </p>
+                  <p v-else key="hidden" class="font-bold text-lg tracking-tight font-mono text-gray-400">
+                    •••• <span class="text-sm font-sans font-medium text-gray-500">JUNO</span>
+                  </p>
+                </transition>
                 <p class="text-xs text-gray-500" v-if="tx.confirmations < 10">
                   {{ tx.confirmations }} Confirmations
                 </p>
@@ -171,6 +212,7 @@ const MineIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="curre
 
 const wallet = useWalletStore();
 const isRefreshing = ref(false);
+const balancesVisible = ref(true);
 
 // Animated CountUp Logic
 const animatedTotal = ref(0);
@@ -251,3 +293,15 @@ function formatDate(timestamp: number) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 </script>
+
+<style scoped>
+.balance-fade-enter-active,
+.balance-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.balance-fade-enter-from,
+.balance-fade-leave-to {
+  opacity: 0;
+}
+</style>
