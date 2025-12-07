@@ -1,6 +1,22 @@
 use crate::rpc::call_rpc;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use tauri::command;
+
+#[derive(Serialize)]
+pub struct SpendableAddress {
+    address: String,
+    balance: f64,
+    addr_type: String, // "transparent", "sapling", "unified"
+}
+
+#[derive(Deserialize)]
+pub struct TxTarget {
+    address: String,
+    amount: f64,
+    memo: Option<String>,
+}
 
 // --- READ OPERATIONS ---
 
@@ -37,50 +53,104 @@ pub async fn get_all_addresses(port: u16, user: String, pass: String) -> Result<
     call_rpc("listaddresses", vec![], port, &user, &pass).await
 }
 
+#[command]
+pub async fn get_spendable_addresses(
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Vec<SpendableAddress>, String> {
+    let mut balance_map: HashMap<String, f64> = HashMap::new();
+    let mut type_map: HashMap<String, String> = HashMap::new();
+
+    // 1. Get Transparent UTXOs
+    // listunspent 0 9999999
+    let t_res = call_rpc("listunspent", vec![json!(0)], port, &user, &pass).await?;
+    if let Some(utxos) = t_res.as_array() {
+        for u in utxos {
+            if let (Some(addr), Some(amount)) = (u["address"].as_str(), u["amount"].as_f64()) {
+                *balance_map.entry(addr.to_string()).or_insert(0.0) += amount;
+                type_map.insert(addr.to_string(), "transparent".to_string());
+            }
+        }
+    }
+
+    // 2. Get Shielded Notes
+    // z_listunspent
+    let z_res = call_rpc("z_listunspent", vec![], port, &user, &pass).await?;
+    if let Some(notes) = z_res.as_array() {
+        for n in notes {
+            if let (Some(addr), Some(amount)) = (n["address"].as_str(), n["amount"].as_f64()) {
+                *balance_map.entry(addr.to_string()).or_insert(0.0) += amount;
+
+                // Determine type based on prefix
+                let t = if addr.starts_with("zs") {
+                    "sapling"
+                } else if addr.starts_with("j1") {
+                    "unified"
+                } else {
+                    "shielded"
+                };
+                type_map.insert(addr.to_string(), t.to_string());
+            }
+        }
+    }
+
+    // Convert to Vec
+    let mut results = Vec::new();
+    for (addr, bal) in balance_map {
+        if bal > 0.0 {
+            results.push(SpendableAddress {
+                address: addr.clone(),
+                balance: bal,
+                addr_type: type_map
+                    .get(&addr)
+                    .unwrap_or(&"unknown".to_string())
+                    .clone(),
+            });
+        }
+    }
+
+    Ok(results)
+}
+
 // --- WRITE OPERATIONS ---
 
 #[command]
 pub async fn send_transaction(
-    from_address: String,
-    to_address: String,
-    amount: f64,
-    memo: Option<String>,
+    from_address: Option<String>,
+    targets: Vec<TxTarget>,
     port: u16,
     user: String,
     pass: String,
 ) -> Result<String, String> {
-    // Construct the amounts array for z_sendmany
-    // z_sendmany "fromaddress" [{"address":..., "amount":...}, ...]
-
-    let mut target = json!({
-        "address": to_address,
-        "amount": amount
-    });
-
-    // If sending to a shielded address, we can add a memo (hex encoded)
-    if let Some(m) = memo {
-        if !m.is_empty() {
-            // Simple hex encoding for the memo
-            let hex_memo = hex::encode(m);
-            target
-                .as_object_mut()
-                .unwrap()
-                .insert("memo".to_string(), json!(hex_memo));
+    let mut json_targets = Vec::new();
+    for t in targets {
+        let mut target_obj = json!({
+            "address": t.address,
+            "amount": t.amount
+        });
+        if let Some(m) = t.memo {
+            if !m.is_empty() {
+                target_obj
+                    .as_object_mut()
+                    .unwrap()
+                    .insert("memo".to_string(), json!(hex::encode(m)));
+            }
         }
+        json_targets.push(target_obj);
     }
 
+    // Default to "*" (Auto-select) if None provided
+    let source = from_address.unwrap_or("*".to_string());
+
     let params = vec![
-        json!(from_address), // From (use "*" to autopick from wallet)
-        json!([target]),     // Recipients list
-        json!(1),            // minconf (1 confirmation required)
-        json!(0.0001),       // fee (standard Juno/Zcash fee)
+        json!(source),       // Source
+        json!(json_targets), // Targets
+        json!(1),            // minconf
+        json!(0.0001),       // fee
     ];
 
     let res = call_rpc("z_sendmany", params, port, &user, &pass).await?;
-
-    // Returns the operation ID (e.g. "opid-1234...")
-    // You must poll z_getoperationresult to see if it succeeded,
-    // but returning the ID is enough for the frontend to show "Sending..."
     Ok(res.as_str().unwrap_or("").to_string())
 }
 

@@ -18,6 +18,18 @@ interface Transaction {
   address?: string;
 }
 
+export interface SpendableAddress {
+  address: string;
+  balance: number;
+  addr_type: 'transparent' | 'sapling' | 'unified';
+}
+
+export interface TxTarget {
+  address: string;
+  amount: number;
+  memo?: string;
+}
+
 export const useWalletStore = defineStore('wallet', {
   state: () => ({
     balance: {
@@ -29,6 +41,7 @@ export const useWalletStore = defineStore('wallet', {
     isLoading: false,
     lastError: null as string | null,
     addresses: [] as string[],
+    spendableAddresses: [] as SpendableAddress[],
   }),
 
   getters: {
@@ -124,28 +137,38 @@ export const useWalletStore = defineStore('wallet', {
       }
     },
 
-    async sendTransaction(toAddress: string, amount: number, memo: string = "") {
+    async fetchSpendableAddresses() {
       const node = useNodeStore();
-      this.isLoading = true;
-      this.lastError = null;
+      if (!node.isConnected) return;
 
       try {
-        // "From" address is set to "*" to let the node pick inputs automatically
+        const res = await invoke<SpendableAddress[]>('get_spendable_addresses', {
+          port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
+        });
+        this.spendableAddresses = res;
+      } catch (e) {
+        console.error(e);
+      }
+    },
+
+    // UPDATE SEND
+    async sendTransaction(targets: TxTarget[], fromAddress?: string) {
+      const node = useNodeStore();
+      this.isLoading = true;
+
+      try {
+        // Pass "fromAddress" or null (rust treats Option<String> as null|string)
         const opId = await invoke<string>('send_transaction', {
-          fromAddress: "*",
-          toAddress,
-          amount,
-          memo,
+          fromAddress: fromAddress || null,
+          targets,
           port: node.rpcPort,
           user: node.rpcUser,
           pass: node.rpcPass,
         });
-
         this.isLoading = false;
-        return opId; // Return the Operation ID so the UI can track it
+        return opId;
       } catch (err: any) {
         this.isLoading = false;
-        this.lastError = err.toString();
         throw err;
       }
     },
