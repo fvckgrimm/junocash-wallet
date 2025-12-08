@@ -8,13 +8,32 @@
     </div>
 
     <!-- Layout Container -->
-    <div class="relative z-10 flex w-full h-full">
-      <!-- Left Sidebar -->
-      <Sidebar />
+    <div class="relative z-10 flex flex-col md:flex-row w-full h-full">
+      
+      <!-- MOBILE HEADER (Visible only on < md screens) -->
+      <header class="md:hidden h-16 shrink-0 border-b border-white/5 bg-[#13161c]/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-30">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <span class="text-white font-bold font-mono">J</span>
+          </div>
+          <span class="font-bold text-white tracking-tight">Juno<span class="text-indigo-400">Cash</span></span>
+        </div>
+        
+        <!-- Hamburger Button -->
+        <button 
+          @click="isSidebarOpen = true"
+          class="p-2 text-gray-400 hover:text-white bg-white/5 rounded-lg active:scale-95 transition-all"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+      </header>
+
+      <!-- Sidebar (Responsive) -->
+      <Sidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false" />
 
       <!-- Main Content Area -->
-      <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <div class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-8">
+      <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative h-[calc(100vh-64px)] md:h-full">
+        <div class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 md:p-8">
           <router-view v-slot="{ Component }">
             <transition name="page" mode="out-in">
               <component :is="Component" />
@@ -25,14 +44,15 @@
     </div>
 
     <!-- GLOBAL NOTIFICATIONS WRAPPER -->
-    <div class="fixed bottom-6 right-6 flex flex-col gap-3 pointer-events-none z-50 perspective-1000">
+    <div class="fixed bottom-6 right-6 left-6 md:left-auto flex flex-col gap-3 pointer-events-none z-50 perspective-1000">
       <transition-group name="notification">
+        <!-- (Existing notification code...) -->
         <div 
           v-for="note in visibleNotifications" 
           :key="note.id"
-          class="pointer-events-auto w-96 relative overflow-hidden rounded-xl bg-[#13161c]/90 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transform transition-all duration-300 hover:scale-[1.02]"
+          class="pointer-events-auto w-full md:w-96 relative overflow-hidden rounded-xl bg-[#13161c]/90 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transform transition-all duration-300 hover:scale-[1.02]"
         >
-          <!-- Status Indicator Glow Line -->
+          <!-- (Existing notification content...) -->
           <div 
             class="absolute left-0 top-0 bottom-0 w-1 shadow-[2px_0_12px_rgba(0,0,0,0.5)]"
             :class="note.status === 'success' ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-rose-500 shadow-rose-500/50'"
@@ -40,7 +60,6 @@
 
           <div class="p-4 pl-5">
             <div class="flex justify-between items-start mb-1">
-              <!-- Title with Icon -->
               <div class="flex items-center gap-2">
                 <div 
                   class="w-5 h-5 rounded-full flex items-center justify-center"
@@ -53,17 +72,11 @@
                   {{ note.status === 'success' ? 'Success' : 'Failed' }}
                 </h4>
               </div>
-
-              <!-- Close Button -->
-              <button 
-                @click="dismiss(note.id)" 
-                class="text-gray-500 hover:text-white transition-colors p-1 -mr-2 -mt-2 rounded-lg hover:bg-white/5"
-              >
+              <button @click="dismiss(note.id)" class="text-gray-500 hover:text-white transition-colors p-1 -mr-2 -mt-2 rounded-lg hover:bg-white/5">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
             
-            <!-- Success Body -->
             <div v-if="note.status === 'success'" class="space-y-2">
                <p class="text-xs text-gray-400">Transaction broadcast successfully.</p>
                <div class="bg-black/30 rounded border border-white/5 px-2 py-1.5 flex flex-col gap-1">
@@ -74,14 +87,11 @@
                </div>
             </div>
 
-            <!-- Error Body -->
             <div v-if="note.status === 'failed'" class="mt-1">
               <p class="text-xs text-rose-300 leading-relaxed font-medium">
                 {{ note.error?.message || "Unknown error occurred during processing." }}
               </p>
             </div>
-
-            <!-- Footer ID -->
             <p class="text-[9px] text-gray-600 mt-3 font-mono text-right opacity-50">Event ID: {{ note.id.substring(0,8) }}</p>
           </div>
         </div>
@@ -97,16 +107,15 @@ import { onMounted, computed, ref, watch } from 'vue';
 import { useNodeStore } from './stores/nodeStore';
 import { useWalletStore } from './stores/walletStore';
 
-// Initialize stores
 const node = useNodeStore();
 const wallet = useWalletStore();
 
 const dismissedIds = ref(new Set<string>());
+const isSidebarOpen = ref(false); // Controls mobile sidebar
 
 const visibleNotifications = computed(() => {
-  // Show newest first, max 3
   return wallet.notifications
-    .slice() // Create shallow copy to reverse safely
+    .slice() 
     .reverse() 
     .filter(n => !dismissedIds.value.has(n.id))
     .slice(0, 3);
@@ -116,11 +125,9 @@ function dismiss(id: string) {
   dismissedIds.value.add(id);
 }
 
-// Auto-dismiss success notifications after 8 seconds
 watch(() => wallet.notifications, (newNotes) => {
   newNotes.forEach(n => {
     if (n.status === 'success' && !dismissedIds.value.has(n.id)) {
-      // Check if we already set a timeout for this one (optional optimization omitted for simplicity)
       setTimeout(() => dismiss(n.id), 8000);
     }
   });

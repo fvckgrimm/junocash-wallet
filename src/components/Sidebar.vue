@@ -1,77 +1,189 @@
 <template>
-  <aside class="w-72 flex flex-col h-screen glass border-r border-white/5 relative z-20">
-    
-    <!-- Logo Area -->
-    <div class="h-24 flex items-center px-8">
-      <div class="flex items-center gap-3 group cursor-default">
-        <div class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-500 ease-out">
-          <!-- Juno Symbol -->
-          <span class="text-white font-bold text-xl leading-none font-mono">J</span>
-          <!-- Shine effect -->
-          <div class="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+  <div>
+    <!-- Mobile Backdrop (Only visible when open on small screens) -->
+    <div 
+      v-if="isOpen" 
+      @click="$emit('close')"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden transition-opacity"
+    ></div>
+
+    <!-- Sidebar Container -->
+    <aside 
+      ref="sidebarRef"
+      class="fixed md:relative
+            top-16 md:top-0         <!-- NEW: offset below mobile header -->
+            left-0
+            z-40
+            flex flex-col
+            border-r border-white/5
+            bg-[#13161c] md:bg-transparent md:glass
+            transition-all duration-300 ease-out md:transition-none
+            h-[calc(100vh-4rem)] md:h-screen  <!-- NEW: adjust mobile height -->
+    "
+      :class="[
+        isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0',
+        isResizing ? 'select-none transition-none' : ''
+      ]"
+      :style="{ width: currentWidth + 'px' }"
+    >
+      
+      <!-- Logo Area -->
+      <div class="h-20 md:h-24 flex items-center justify-between px-6 md:px-8 shrink-0 overflow-hidden">
+        <div class="flex items-center gap-3 select-none min-w-max">
+          <div class="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
+            <span class="text-white font-bold text-lg md:text-xl leading-none font-mono">J</span>
+          </div>
+          <!-- Hide text if sidebar gets too narrow -->
+          <transition name="fade">
+            <div v-if="currentWidth > 160">
+              <h1 class="text-base md:text-lg font-bold tracking-tight text-white">Juno<span class="text-indigo-400">Cash</span></h1>
+              <p class="text-[10px] uppercase tracking-widest text-gray-500 font-medium">Wallet</p>
+            </div>
+          </transition>
         </div>
-        <div>
-          <h1 class="text-lg font-bold tracking-tight text-white">Juno<span class="text-indigo-400">Cash</span></h1>
-          <p class="text-[10px] uppercase tracking-widest text-gray-500 font-medium">Wallet</p>
+
+        <!-- Mobile Close Button -->
+        <button 
+          @click="$emit('close')"
+          class="md:hidden p-2 text-gray-400 hover:text-white bg-white/5 rounded-lg"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-4 py-4 md:py-6 overflow-y-auto custom-scrollbar overflow-x-hidden">
+        <ul class="space-y-1">
+          <li v-for="link in links" :key="link.path">
+            <router-link 
+              :to="link.path"
+              @click="$emit('close')"
+              class="group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200"
+              active-class="bg-white/5 shadow-inner"
+              v-slot="{ isActive }"
+            >
+              <!-- Active Indicator Bar -->
+              <div 
+                class="absolute left-0 h-6 w-1 rounded-r-full bg-indigo-500 transition-all duration-300 transform origin-left"
+                :class="isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'"
+              ></div>
+
+              <!-- Icon -->
+              <component 
+                :is="link.icon" 
+                class="w-5 h-5 transition-colors duration-300 relative z-10 shrink-0"
+                :class="isActive ? 'text-indigo-400' : 'text-gray-400 group-hover:text-gray-200'" 
+              />
+              
+              <!-- Label (Hide if narrow) -->
+              <transition name="fade">
+                <span 
+                  v-show="currentWidth > 160"
+                  class="font-medium text-sm transition-colors duration-300 relative z-10 whitespace-nowrap"
+                  :class="isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'"
+                >
+                  {{ link.name }}
+                </span>
+              </transition>
+            </router-link>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Status Area (Pinned to bottom) -->
+      <div class="p-4 border-t border-white/5 bg-black/20 shrink-0 overflow-hidden">
+        <!-- Only show full status if wide enough, otherwise show dot -->
+        <div v-if="currentWidth > 160">
+          <Status />
+        </div>
+        <div v-else class="flex justify-center">
+           <!-- Minified Status Dot -->
+           <div class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" title="Online"></div>
         </div>
       </div>
-    </div>
 
-    <!-- Navigation -->
-    <nav class="flex-1 px-4 py-6 overflow-y-auto">
-      <ul class="space-y-1">
-        <li v-for="(link, index) in links" :key="link.path" 
-            class="animate-slide-right" 
-            :style="{ animationDelay: `${index * 50}ms` }">
-          
-          <router-link 
-            :to="link.path"
-            class="group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
-            active-class="bg-white/5 shadow-inner"
-            v-slot="{ isActive }"
-          >
-            <!-- Hover/Active Glow Background -->
-            <div 
-              class="absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300"
-              :class="isActive ? 'opacity-100 bg-gradient-to-r from-indigo-500/10 to-transparent' : 'group-hover:opacity-100 bg-white/[0.03]'"
-            ></div>
+      <!-- RESIZER HANDLE (Desktop Only) -->
+      <div 
+        class="hidden md:block absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-500/50 active:bg-indigo-500 transition-colors z-50 group"
+        @mousedown.prevent="startResize"
+        @dblclick="resetWidth"
+      >
+        <!-- Visual Hint -->
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-white/10 group-hover:bg-white/50 rounded-full"></div>
+      </div>
 
-            <!-- Active Indicator Bar -->
-            <div 
-              class="absolute left-0 h-6 w-1 rounded-r-full bg-indigo-500 transition-all duration-300 transform origin-left"
-              :class="isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'"
-            ></div>
-
-            <!-- Icon -->
-            <component 
-              :is="link.icon" 
-              class="w-5 h-5 transition-colors duration-300 relative z-10"
-              :class="isActive ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'text-gray-400 group-hover:text-gray-200'" 
-            />
-            
-            <!-- Label -->
-            <span 
-              class="font-medium text-sm transition-colors duration-300 relative z-10"
-              :class="isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'"
-            >
-              {{ link.name }}
-            </span>
-
-          </router-link>
-        </li>
-      </ul>
-    </nav>
-
-    <!-- Status Area (Pinned to bottom) -->
-    <div class="p-4 border-t border-white/5 bg-black/20">
-      <Status />
-    </div>
-  </aside>
+    </aside>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import Status from './Status.vue';
 
+const props = defineProps<{
+  isOpen: boolean
+}>();
+
+defineEmits(['close']);
+
+// --- Resizing Logic ---
+const sidebarRef = ref<HTMLElement | null>(null);
+const isResizing = ref(false);
+const sidebarWidth = ref(288); // Default 288px (w-72)
+const minWidth = 80;  // Icon only mode
+const maxWidth = 450; // Max reasonable width
+
+// Computed width to handle mobile override safely
+const currentWidth = computed(() => {
+  // On mobile (window width < 768), we usually want fixed width or 100%
+  // But CSS media queries handle the layout shift. 
+  // We just ensure the variable holds the desktop preference.
+  return sidebarWidth.value;
+});
+
+function startResize() {
+  isResizing.value = true;
+  document.addEventListener('mousemove', handleResize);
+  document.addEventListener('mouseup', stopResize);
+  // Add global cursor style
+  document.body.style.cursor = 'col-resize';
+}
+
+function handleResize(e: MouseEvent) {
+  if (!isResizing.value) return;
+  
+  let newWidth = e.clientX;
+  
+  // Constraints
+  if (newWidth < minWidth) newWidth = minWidth;
+  if (newWidth > maxWidth) newWidth = maxWidth;
+  
+  sidebarWidth.value = newWidth;
+}
+
+function stopResize() {
+  isResizing.value = false;
+  document.removeEventListener('mousemove', handleResize);
+  document.removeEventListener('mouseup', stopResize);
+  document.body.style.cursor = '';
+  
+  // Persist
+  localStorage.setItem('sidebarWidth', sidebarWidth.value.toString());
+}
+
+function resetWidth() {
+  sidebarWidth.value = 288;
+  localStorage.setItem('sidebarWidth', '288');
+}
+
+onMounted(() => {
+  const saved = localStorage.getItem('sidebarWidth');
+  if (saved) {
+    sidebarWidth.value = parseInt(saved);
+  }
+});
+
+// --- Navigation Data ---
 // Refined Icons (Lucide Style - Crisp 2px stroke)
 const DashboardIcon = { template: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>` };
 const SendIcon = { template: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>` };
@@ -89,3 +201,15 @@ const links = [
   { name: 'Settings', path: '/settings', icon: SettingsIcon },
 ];
 </script>
+
+<style scoped>
+/* Text fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
