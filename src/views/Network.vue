@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, computed } from 'vue';
-import { useNodeStore, type PeerInfo } from '../stores/nodeStore';
+import { useNodeStore } from '../stores/nodeStore';
 
 const node = useNodeStore();
 let pollInterval: any;
