@@ -95,6 +95,19 @@ export const useWalletStore = defineStore('wallet', {
       }
     },
 
+    async getSeedPhrase() {
+      const node = useNodeStore();
+      if (!node.isConnected) throw new Error("Node not connected");
+
+      // We return the raw string directly to the component
+      // to keep the footprint small and transient.
+      return await invoke<string>('get_seed_phrase', {
+        port: node.rpcPort,
+        user: node.rpcUser,
+        pass: node.rpcPass,
+      });
+    },
+
     async fetchAddresses() {
       const node = useNodeStore();
       if (!node.isConnected) return;

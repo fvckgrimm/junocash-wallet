@@ -21,6 +21,25 @@ pub struct TxTarget {
 // --- READ OPERATIONS ---
 
 #[command]
+pub async fn get_seed_phrase(port: u16, user: String, pass: String) -> Result<String, String> {
+    let res = call_rpc("z_getseedphrase", vec![], port, &user, &pass).await?;
+
+    // The RPC returns a file path where the seed phrase is stored
+    let file_path = res.as_str().ok_or_else(|| {
+        "Failed to retrieve seed phrase path. Is the wallet encrypted/locked?".to_string()
+    })?;
+
+    // Read the file contents
+    let contents = std::fs::read_to_string(file_path)
+        .map_err(|e| format!("Failed to read seed phrase file: {}", e))?;
+
+    // Delete the file immediately after reading for security
+    let _ = std::fs::remove_file(file_path);
+
+    Ok(contents)
+}
+
+#[command]
 pub async fn get_balance(port: u16, user: String, pass: String) -> Result<Value, String> {
     // z_gettotalbalance provides the most complete view (transparent + shielded)
     // Returns: { "total": 0.0, "transparent": 0.0, "private": 0.0 }

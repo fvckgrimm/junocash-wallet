@@ -1,10 +1,10 @@
 <template>
-  <div class="max-w-4xl mx-auto min-h-full flex flex-col p-2 pb-20">
+  <div class="max-w-4xl mx-auto min-h-full flex flex-col p-2 pb-20 relative">
     
     <!-- Header -->
     <div class="mb-8 px-2 animate-fade-in">
       <h1 class="text-2xl font-bold text-white tracking-tight">System Configuration</h1>
-      <p class="text-gray-400 text-sm">Configure your local node connection, mining preferences, and storage paths.</p>
+      <p class="text-gray-400 text-sm">Configure your local node connection, mining preferences, and security.</p>
     </div>
 
     <!-- Main Settings Card -->
@@ -73,7 +73,7 @@
           </div>
         </div>
 
-        <!-- SECTION 2: SECURITY -->
+        <!-- SECTION 2: RPC SECURITY -->
         <div class="space-y-5">
            <div class="flex items-center gap-3 border-b border-white/5 pb-2">
             <div class="p-1.5 bg-indigo-500/20 rounded text-indigo-400">
@@ -121,7 +121,7 @@
           </div>
         </div>
 
-        <!-- SECTION 3: MINING & PERFORMANCE -->
+        <!-- SECTION 3: MINING CONFIGURATION -->
         <div class="space-y-5">
            <div class="flex items-center gap-3 border-b border-white/5 pb-2">
             <div class="p-1.5 bg-purple-500/20 rounded text-purple-400">
@@ -163,7 +163,7 @@
                      <h3 class="text-sm font-bold text-white">Developer Donation</h3>
                      <span class="text-[10px] text-gray-500 uppercase tracking-wide">(Requires Restart)</span>
                    </div>
-                   <p class="text-xs text-gray-400 mt-1">Automatically donate a percentage of block rewards to the Juno Cash developers.</p>
+                   <p class="text-xs text-gray-400 mt-1">Automatically donate a percentage of block rewards to the developers.</p>
                 </div>
                 <div class="text-right">
                    <span class="text-2xl font-mono font-bold" 
@@ -193,7 +193,36 @@
           </div>
         </div>
 
-        <!-- SECTION 4: ACTIONS -->
+        <!-- SECTION 4: SECURITY ZONE -->
+        <div class="space-y-5">
+           <div class="flex items-center gap-3 border-b border-white/5 pb-2">
+            <div class="p-1.5 bg-red-500/20 rounded text-red-400">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            </div>
+            <h2 class="text-sm font-bold text-gray-200 uppercase tracking-wider">Security Zone</h2>
+          </div>
+
+          <div class="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                Backup Recovery Phrase
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-300 uppercase">Highly Sensitive</span>
+              </h3>
+              <p class="text-sm text-gray-400 mt-2 max-w-lg leading-relaxed">
+                Your 24-word seed phrase is the only way to recover your funds if this computer fails. 
+                Write it down on paper and store it securely. Never share it.
+              </p>
+            </div>
+            <button 
+              @click="startBackupFlow"
+              class="px-6 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold border border-red-500/20 hover:border-red-500/40 transition-all active:scale-95 whitespace-nowrap"
+            >
+              Reveal Seed Phrase
+            </button>
+          </div>
+        </div>
+
+        <!-- SECTION 5: ACTIONS -->
         <div class="pt-4 border-t border-white/5 space-y-4">
           
           <div class="flex flex-col sm:flex-row gap-4">
@@ -238,11 +267,111 @@
 
       </div>
     </div>
+
+    <!-- ========================================== -->
+    <!--          SECURE BACKUP MODAL               -->
+    <!-- ========================================== -->
+    <transition name="modal">
+      <div v-if="backupState.isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <!-- Backdrop with Blur -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-xl transition-opacity" @click="closeBackup"></div>
+
+        <!-- Modal Content -->
+        <div class="relative bg-[#181B24] w-full max-w-2xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          
+          <!-- Header -->
+          <div class="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white tracking-tight">Wallet Backup</h2>
+            <button @click="closeBackup" class="text-gray-500 hover:text-white transition-colors">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+
+          <!-- STAGE 1: WARNING -->
+          <div v-if="backupState.step === 1" class="p-10 flex flex-col items-center text-center space-y-6">
+            <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-2">
+               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-white">Are you being watched?</h3>
+            <p class="text-gray-400 text-sm max-w-md leading-relaxed">
+              Anyone with these words can steal your funds instantly. Ensure you are in a private location and no cameras or screen sharing software are active.
+            </p>
+            <div class="pt-4 w-full max-w-xs">
+              <button @click="fetchAndShowSeed" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-900/20">
+                I am ready to write it down
+              </button>
+            </div>
+          </div>
+
+          <!-- STAGE 2: DISPLAY SEED -->
+          <div v-if="backupState.step === 2" class="p-8 flex flex-col h-full overflow-hidden">
+            <div class="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg flex gap-3 mb-6">
+               <svg class="text-amber-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+               <p class="text-xs text-amber-200/90">Write these words down in order #1 to #24. You will be asked to verify them next.</p>
+            </div>
+
+            <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 overflow-y-auto custom-scrollbar p-2 mb-6">
+              <div v-for="(word, idx) in seedWords" :key="idx" 
+                   class="relative group bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col items-center justify-center select-none hover:bg-white/5 transition-colors">
+                <span class="absolute top-1 left-2 text-[10px] text-gray-600 font-bold select-none">{{ idx + 1 }}</span>
+                <span class="font-mono text-sm font-bold text-gray-200 tracking-wide select-all">{{ word }}</span>
+              </div>
+            </div>
+
+            <button @click="startVerification" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all mt-auto">
+              I have written it down
+            </button>
+          </div>
+
+          <!-- STAGE 3: VERIFY -->
+          <div v-if="backupState.step === 3" class="p-10 flex flex-col items-center text-center space-y-6">
+            <h3 class="text-xl font-bold text-white">Verify Backup</h3>
+            <p class="text-gray-400 text-sm">Please enter <span class="text-white font-bold">Word #{{ verifyTargetIndex + 1 }}</span> to confirm you saved your phrase.</p>
+            
+            <div class="w-full max-w-xs space-y-4">
+               <input 
+                 v-model="verifyInput" 
+                 type="text" 
+                 class="w-full text-center py-3 bg-black/40 border border-white/20 rounded-xl text-white font-mono text-lg focus:border-indigo-500 outline-none transition-colors"
+                 placeholder="Enter word here"
+                 @keyup.enter="checkVerification"
+               />
+               
+               <p v-if="verifyError" class="text-red-400 text-xs font-bold animate-pulse">{{ verifyError }}</p>
+
+               <button @click="checkVerification" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all">
+                 Verify
+               </button>
+               
+               <button @click="backupState.step = 2" class="text-xs text-gray-500 hover:text-gray-300 underline">
+                 Back to words
+               </button>
+            </div>
+          </div>
+
+           <!-- STAGE 4: SUCCESS -->
+          <div v-if="backupState.step === 4" class="p-10 flex flex-col items-center text-center space-y-6">
+            <div class="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 mb-2">
+               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-white">Backup Verified</h3>
+            <p class="text-gray-400 text-sm max-w-md">
+              Your recovery phrase has been securely zeroed out from memory. Keep your written copy safe.
+            </p>
+            <button @click="closeBackup" class="mt-4 px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-xl transition-all">
+              Close
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, onUnmounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useNodeStore } from '../stores/nodeStore';
@@ -257,7 +386,7 @@ const dataDir = ref('');
 const rpcUser = ref('');
 const rpcPass = ref('');
 const randomxFastMode = ref(false); 
-const donationPercent = ref(5); // Default 5%
+const donationPercent = ref(5); 
 const showPass = ref(false);
 
 // UI State
@@ -318,7 +447,6 @@ async function launchNode() {
   await saveToStore();
 
   try {
-    // Pass all parameters to the Rust backend
     await invoke('launch_node', {
       binPath: binPath.value,
       dataDir: dataDir.value,
@@ -358,6 +486,89 @@ async function connectOnly() {
     setStatus('error', "Connection Failed: Is the node running? (" + e.message + ")");
   }
 }
+
+// ==========================================
+//          BACKUP LOGIC
+// ==========================================
+const seedWords = ref<string[]>([]);
+const verifyInput = ref('');
+const verifyTargetIndex = ref(0);
+const verifyError = ref('');
+
+const backupState = reactive({
+  isOpen: false,
+  step: 1 // 1=Warning, 2=Display, 3=Verify, 4=Success
+});
+
+function startBackupFlow() {
+  backupState.step = 1;
+  backupState.isOpen = true;
+  verifyError.value = '';
+}
+
+async function fetchAndShowSeed() {
+  try {
+    const rawOutput = await wallet.getSeedPhrase();
+    
+    // Extract the content between the header and footer markers
+    const headerMarker = "=== RECOVERY SEED PHRASE ===";
+    const footerMarker = "=== IMPORTANT ===";
+    
+    const headerIndex = rawOutput.indexOf(headerMarker);
+    const footerIndex = rawOutput.indexOf(footerMarker);
+    
+    let seedPart = rawOutput;
+    if (headerIndex !== -1 && footerIndex !== -1) {
+      seedPart = rawOutput.substring(headerIndex + headerMarker.length, footerIndex);
+    }
+    
+    // Split on whitespace and filter out empty strings and marker artifacts
+    const words = seedPart
+        .trim()
+        .split(/\s+/)
+        .filter(w => w.length > 0 && !w.includes('==='));
+
+    if (words.length !== 24) {
+      throw new Error(`Expected 24 words but found ${words.length}. Please try again.`);
+    }
+
+    seedWords.value = words;
+    backupState.step = 2;
+  } catch(e: any) {
+    alert("Error fetching seed: " + e.message);
+    closeBackup();
+  }
+}
+
+function startVerification() {
+  verifyTargetIndex.value = Math.floor(Math.random() * 24);
+  verifyInput.value = '';
+  verifyError.value = '';
+  backupState.step = 3;
+}
+
+function checkVerification() {
+  const correctWord = seedWords.value[verifyTargetIndex.value];
+  if (verifyInput.value.trim().toLowerCase() === correctWord.toLowerCase()) {
+    // Success - ZERO OUT MEMORY
+    seedWords.value = []; 
+    backupState.step = 4;
+  } else {
+    verifyError.value = "Incorrect word. Please check your written backup.";
+  }
+}
+
+function closeBackup() {
+  // CRITICAL: ZERO OUT DATA
+  seedWords.value = [];
+  verifyInput.value = '';
+  backupState.isOpen = false;
+  setTimeout(() => { backupState.step = 1; }, 300);
+}
+
+onUnmounted(() => {
+  seedWords.value = [];
+});
 </script>
 
 <style scoped>
@@ -365,26 +576,28 @@ async function connectOnly() {
 .fade-leave-active {
   transition: opacity 0.3s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }
-
-/* Custom range slider styling for Webkit */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #10B981; /* Emerald-500 */
+  background: #10B981;
   cursor: pointer;
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
-  margin-top: -4px; /* Align vertical center if needed */
+  margin-top: -4px;
 }
-
-/* For Firefox */
 input[type="range"]::-moz-range-thumb {
   width: 16px;
   height: 16px;

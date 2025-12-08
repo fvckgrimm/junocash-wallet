@@ -92,6 +92,7 @@ fn main() {
             mining::set_mining,
             mining::shield_coinbase,
             // Wallet
+            wallet::get_seed_phrase,
             wallet::get_balance,
             wallet::list_transactions,
             wallet::send_transaction,
