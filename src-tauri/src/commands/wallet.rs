@@ -22,7 +22,12 @@ pub struct TxTarget {
 // --- READ OPERATIONS ---
 
 #[command]
-pub async fn get_seed_phrase(host: String, port: u16, user: String, pass: String) -> Result<String, String> {
+pub async fn get_seed_phrase(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<String, String> {
     let res = call_rpc("z_getseedphrase", vec![], &host, port, &user, &pass).await?;
 
     // The RPC returns a file path where the seed phrase is stored
@@ -52,14 +57,24 @@ pub async fn get_seed_phrase(host: String, port: u16, user: String, pass: String
 }
 
 #[command]
-pub async fn get_balance(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn get_balance(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Value, String> {
     // z_gettotalbalance provides the most complete view (transparent + shielded)
     // Returns: { "total": 0.0, "transparent": 0.0, "private": 0.0 }
     call_rpc("z_gettotalbalance", vec![], &host, port, &user, &pass).await
 }
 
 #[command]
-pub async fn list_transactions(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn list_transactions(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Value, String> {
     // listtransactions accounts for transparent txs.
     // z_listreceivedbyaddress is needed for shielded.
     // For a simple UI, we might just query 'listtransactions' for now.
@@ -69,7 +84,12 @@ pub async fn list_transactions(host: String, port: u16, user: String, pass: Stri
 }
 
 #[command]
-pub async fn get_block_count(host: String, port: u16, user: String, pass: String) -> Result<u64, String> {
+pub async fn get_block_count(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<u64, String> {
     // Call the "getblockcount" RPC method
     let res = call_rpc("getblockcount", vec![], &host, port, &user, &pass).await?;
 
@@ -79,19 +99,34 @@ pub async fn get_block_count(host: String, port: u16, user: String, pass: String
 }
 
 #[command]
-pub async fn get_all_addresses(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn get_all_addresses(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Value, String> {
     // 'listaddresses' returns the hierarchical structure of the wallet
     call_rpc("listaddresses", vec![], &host, port, &user, &pass).await
 }
 
 #[command]
-pub async fn get_operation_status(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn get_operation_status(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Value, String> {
     // z_getoperationresult returns the result AND removes it from the node's memory list
     call_rpc("z_getoperationresult", vec![], &host, port, &user, &pass).await
 }
 
 #[command]
-pub async fn get_blockchain_info(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn get_blockchain_info(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Value, String> {
     // Returns detailed info including 'verificationprogress', 'blocks', 'headers'
     call_rpc("getblockchaininfo", vec![], &host, port, &user, &pass).await
 }
@@ -121,20 +156,50 @@ pub async fn get_spendable_addresses(
     // 2. Get Shielded Notes
     // z_listunspent
     let z_res = call_rpc("z_listunspent", vec![], &host, port, &user, &pass).await?;
-    if let Some(notes) = z_res.as_array() {
-        for n in notes {
-            if let (Some(addr), Some(amount)) = (n["address"].as_str(), n["amount"].as_f64()) {
-                *balance_map.entry(addr.to_string()).or_insert(0.0) += amount;
 
-                // Determine type based on prefix
-                let t = if addr.starts_with("zs") {
-                    "sapling"
-                } else if addr.starts_with("j1") {
-                    "unified"
-                } else {
-                    "shielded"
-                };
-                type_map.insert(addr.to_string(), t.to_string());
+    // We need to find your main Unified Address to assign the "change" notes to it.
+    let mut main_unified_addr: Option<String> = None;
+
+    if let Some(notes) = z_res.as_array() {
+        // Pass 1: Find a valid Unified Address in the list to use as the "owner"
+        for n in notes {
+            if let Some(addr) = n["address"].as_str() {
+                if addr.starts_with("j1") {
+                    main_unified_addr = Some(addr.to_string());
+                    break; // Found one, we'll use this
+                }
+            }
+        }
+
+        // Pass 2: Aggregate balances
+        for n in notes {
+            let amount = n["amount"].as_f64().unwrap_or(0.0);
+            let is_change = n["change"].as_bool().unwrap_or(false);
+
+            // Determine which address owns this note
+            let addr_str = if let Some(a) = n["address"].as_str() {
+                Some(a.to_string())
+            } else if is_change {
+                // If it is change (no address), assign it to the Unified Address we found
+                main_unified_addr.clone()
+            } else {
+                None
+            };
+
+            if let Some(addr) = addr_str {
+                *balance_map.entry(addr.clone()).or_insert(0.0) += amount;
+
+                // Ensure the type map has an entry for this address
+                if !type_map.contains_key(&addr) {
+                    let t = if addr.starts_with("zs") {
+                        "sapling"
+                    } else if addr.starts_with("j1") {
+                        "unified"
+                    } else {
+                        "shielded"
+                    };
+                    type_map.insert(addr, t.to_string());
+                }
             }
         }
     }
