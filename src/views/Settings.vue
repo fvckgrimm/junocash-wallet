@@ -83,17 +83,6 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- RPC Host -->
-            <div class="space-y-2">
-              <label class="text-xs font-semibold text-gray-500 ml-1">RPC Host</label>
-              <input
-                v-model="rpcHost"
-                type="text"
-                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
-                placeholder="127.0.0.1"
-              />
-            </div>
-
             <!-- Username -->
             <div class="space-y-2">
               <label class="text-xs font-semibold text-gray-500 ml-1">RPC User</label>
@@ -105,7 +94,7 @@
             </div>
 
             <!-- Password -->
-            <div class="space-y-2 relative md:col-span-2">
+            <div class="space-y-2 relative">
               <label class="text-xs font-semibold text-gray-500 ml-1">RPC Password</label>
               <div class="relative">
                 <input
@@ -121,6 +110,28 @@
                   <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                 </button>
               </div>
+            </div>
+
+            <!-- RPC Host -->
+            <div class="space-y-2">
+              <label class="text-xs font-semibold text-gray-500 ml-1">RPC Host</label>
+              <input
+                v-model="rpcHost"
+                type="text"
+                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                placeholder="127.0.0.1"
+              />
+            </div>
+
+            <!-- RPC Port -->
+            <div class="space-y-2">
+              <label class="text-xs font-semibold text-gray-500 ml-1">RPC Port</label>
+              <input
+                v-model="rpcPort"
+                type="number"
+                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                placeholder="18232"
+              />
             </div>
           </div>
           
@@ -395,6 +406,7 @@ const wallet = useWalletStore();
 const binPath = ref('');
 const dataDir = ref('');
 const rpcHost = ref('127.0.0.1');
+const rpcPort = ref(18232);
 const rpcUser = ref('');
 const rpcPass = ref('');
 const randomxFastMode = ref(false);
@@ -414,6 +426,7 @@ onMounted(async () => {
   binPath.value = node.binPath;
   dataDir.value = node.dataDir;
   rpcHost.value = node.rpcHost;
+  rpcPort.value = node.rpcPort;
   rpcUser.value = node.rpcUser;
   rpcPass.value = node.rpcPass;
   randomxFastMode.value = node.randomxFastMode;
@@ -438,6 +451,7 @@ async function saveToStore() {
     rpcUser.value,
     rpcPass.value,
     rpcHost.value,
+    rpcPort.value,
     randomxFastMode.value,
     donationPercent.value
   );
@@ -464,15 +478,15 @@ async function launchNode() {
     await invoke('launch_node', {
       binPath: binPath.value,
       dataDir: dataDir.value,
-      rpcPort: node.rpcPort,
-      rpcUser: node.rpcUser,
-      rpcPass: node.rpcPass,
+      rpcPort: rpcPort.value,
+      rpcUser: rpcUser.value,
+      rpcPass: rpcPass.value,
       randomxFastMode: randomxFastMode.value,
       donationPercent: donationPercent.value
     });
-    
+
     setStatus('success', `Node launch command sent. Donations set to ${donationPercent.value}%.`);
-    
+
     // Attempt to verify connection shortly after
     setTimeout(() => {
         wallet.fetchBalance();

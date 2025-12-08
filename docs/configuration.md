@@ -123,10 +123,9 @@ Testnet coins have no value. Good for learning.
 
 Default RPC port: `18232`
 
-If you need to change it:
-1. Edit `junocash.conf`: `rpcport=YOUR_PORT`
-2. Currently wallet uses 18232 (hardcoded)
-3. Contact developer if you need custom port support
+The port can be manually changed in the wallet settings.
+- The wallet uses 18232 as the default port
+- Both RPC host and port are configurable in wallet settings
 
 ## Security Tips
 

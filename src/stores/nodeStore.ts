@@ -10,7 +10,7 @@ export const useNodeStore = defineStore("node", {
     rpcHost: localStorage.getItem("rpcHost") || "127.0.0.1",
     randomxFastMode: localStorage.getItem("randomxFastMode") === "true",
     donationPercent: parseInt(localStorage.getItem("donationPercent") || "5"),
-    rpcPort: 18232,
+    rpcPort: parseInt(localStorage.getItem("rpcPort") || "18232"),
     isConnected: false,
   }),
 
@@ -26,6 +26,7 @@ export const useNodeStore = defineStore("node", {
       this.donationPercent = parseInt(
         localStorage.getItem("donationPercent") || "5",
       );
+      this.rpcPort = parseInt(localStorage.getItem("rpcPort") || "18232");
     },
 
     async saveSettings(
@@ -34,6 +35,7 @@ export const useNodeStore = defineStore("node", {
       user: string,
       pass: string,
       host: string,
+      port: number,
       randomxFastMode: boolean,
       donation: number,
     ) {
@@ -45,6 +47,7 @@ export const useNodeStore = defineStore("node", {
       this.rpcHost = host;
       this.randomxFastMode = randomxFastMode;
       this.donationPercent = donation;
+      this.rpcPort = port;
 
       // 2. Save to LocalStorage
       localStorage.setItem("binPath", bin);
@@ -54,6 +57,7 @@ export const useNodeStore = defineStore("node", {
       localStorage.setItem("rpcHost", host);
       localStorage.setItem("randomxFastMode", randomxFastMode.toString());
       localStorage.setItem("donationPercent", donation.toString());
+      localStorage.setItem("rpcPort", port.toString());
     },
   },
 });
