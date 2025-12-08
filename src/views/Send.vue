@@ -2,7 +2,7 @@
   <div class="h-full flex flex-col relative">
     
     <!-- Scrollable Content Area -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar p-6 pb-32"> <!-- pb-32 ensures content isn't hidden behind footer -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-6 pb-32">
       
       <!-- Header -->
       <div class="flex items-center justify-between mb-8 animate-fade-in">
@@ -104,22 +104,38 @@
 
               <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
                 
-                <!-- Address Input -->
+                <!-- Address Input with Address Book Integration -->
                 <div class="md:col-span-8 space-y-2">
-                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide ml-1">
-                    Recipient {{ recipients.length > 1 ? `#${index + 1}` : '' }} Address
-                  </label>
+                  <div class="flex items-center justify-between ml-1 mb-2">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      Recipient {{ recipients.length > 1 ? `#${index + 1}` : '' }} Address
+                    </label>
+                    <button 
+                      type="button"
+                      @click="openAddressBook(index)"
+                      class="text-xs font-bold text-indigo-400 hover:text-white transition-colors uppercase tracking-wider bg-indigo-500/10 hover:bg-indigo-500 px-2 py-1 rounded flex items-center gap-1"
+                    >
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      Address Book
+                    </button>
+                  </div>
                   <div class="relative">
                     <input 
                       v-model="recipient.address" 
                       type="text" 
-                      placeholder="Paste zs1... or t1... address" 
+                      placeholder="Paste j1... or t1... address" 
                       class="w-full pl-10 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-gray-200 font-mono text-sm focus:outline-none focus:border-indigo-500/50 focus:bg-black/30 transition-all placeholder-gray-600"
                       required
                     />
                     <!-- Icon -->
                     <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    
+                    <!-- Address Book Label (if recognized) -->
+                    <div v-if="getAddressLabel(recipient.address)" class="mt-1.5 flex items-center gap-1.5 text-xs text-indigo-400">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M9 11.75A2.25 2.25 0 1 1 11.25 9 2.25 2.25 0 0 1 9 11.75zm7.5 4.5A.75.75 0 0 0 15.75 15h-1.5a.75.75 0 0 0-.75.75v1.5a.75.75 0 0 0 .75.75h1.5a.75.75 0 0 0 .75-.75zm-7.5 0A.75.75 0 0 0 8.25 15h-1.5a.75.75 0 0 0-.75.75v1.5a.75.75 0 0 0 .75.75h1.5a.75.75 0 0 0 .75-.75zM21 3v18H3V3zm-1.5 1.5h-15v15h15z"/></svg>
+                      <span class="font-medium">{{ getAddressLabel(recipient.address) }}</span>
                     </div>
                   </div>
                 </div>
@@ -220,16 +236,70 @@
       </div>
     </transition>
 
+    <!-- Address Book Modal -->
+    <transition name="modal">
+      <div v-if="addressBookOpen !== null" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeAddressBook">
+        <div class="glass rounded-2xl border border-white/10 p-6 w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl animate-scale-in" @click.stop>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-white">Select from Address Book</h2>
+            <button @click="closeAddressBook" class="p-2 text-gray-500 hover:text-white rounded-lg hover:bg-white/5">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Search -->
+          <div class="relative mb-4">
+            <input 
+              v-model="addressBookSearch"
+              type="text"
+              placeholder="Search addresses..."
+              class="w-full pl-10 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-gray-200 text-sm focus:outline-none focus:border-indigo-500/50 transition-all placeholder-gray-600"
+            />
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+
+          <!-- Address List -->
+          <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2">
+            <div v-if="filteredAddressBookEntries.length === 0" class="text-center py-12 text-gray-500">
+              <p>No addresses found</p>
+            </div>
+            <button
+              v-for="entry in filteredAddressBookEntries"
+              :key="entry.id"
+              type="button"
+              @click="selectFromAddressBook(entry.address)"
+              class="w-full p-4 bg-black/20 hover:bg-black/40 border border-white/5 hover:border-indigo-500/30 rounded-xl text-left transition-all group"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                  <span class="text-indigo-400 font-bold text-sm">{{ entry.label[0].toUpperCase() }}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-white font-bold text-sm truncate group-hover:text-indigo-400 transition-colors">{{ entry.label }}</h3>
+                  <p class="text-xs text-gray-500 font-mono truncate">{{ entry.address }}</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useWalletStore, type TxTarget } from '../stores/walletStore';
+import { useAddressBookStore } from '../stores/addressBookStore';
 
 const wallet = useWalletStore();
+const addressBook = useAddressBookStore();
+
 const successTxId = ref('');
-const selectedSource = ref(''); // Empty string = Auto
+const selectedSource = ref('');
+const addressBookOpen = ref<number | null>(null);
+const addressBookSearch = ref('');
 
 // Recipient List
 let nextId = 1;
@@ -239,6 +309,7 @@ const recipients = ref<Array<{id: number} & TxTarget>>([
 
 onMounted(() => {
   wallet.fetchSpendableAddresses();
+  addressBook.loadFromStorage();
 });
 
 // Computed Helpers
@@ -253,6 +324,13 @@ const totalRequired = computed(() => {
   return sum + 0.0001; 
 });
 
+const filteredAddressBookEntries = computed(() => {
+  if (!addressBookSearch.value.trim()) {
+    return addressBook.sortedEntries;
+  }
+  return addressBook.searchEntries(addressBookSearch.value);
+});
+
 // Presentation Helpers
 function formatTypeLabel(t: string) {
   if(t === 'unified') return 'Unified';
@@ -264,10 +342,33 @@ function shorten(addr: string) {
   return addr.substring(0, 6) + '...' + addr.substring(addr.length - 6);
 }
 
+function getAddressLabel(address: string): string | null {
+  const entry = addressBook.getByAddress(address);
+  return entry ? entry.label : null;
+}
+
+// Address Book Functions
+function openAddressBook(index: number) {
+  addressBookOpen.value = index;
+  addressBookSearch.value = '';
+}
+
+function closeAddressBook() {
+  addressBookOpen.value = null;
+  addressBookSearch.value = '';
+}
+
+function selectFromAddressBook(address: string) {
+  if (addressBookOpen.value !== null) {
+    recipients.value[addressBookOpen.value].address = address;
+    addressBook.markAsUsed(address);
+    closeAddressBook();
+  }
+}
+
 // Logic
 function addRecipient() {
   recipients.value.push({ id: nextId++, address: '', amount: 0, memo: '' });
-  // Scroll to bottom (optional nice-to-have)
 }
 
 function removeRecipient(index: number) {
@@ -275,12 +376,10 @@ function removeRecipient(index: number) {
 }
 
 function setMax(index: number) {
-  // Calculate how much is used by OTHERS
   const others = recipients.value.reduce((acc, curr, idx) => idx === index ? acc : acc + (curr.amount || 0), 0);
   const fee = 0.0001;
   const remaining = currentMaxBalance.value - fee - others;
   
-  // Update the target amount
   recipients.value[index].amount = remaining > 0 ? Number(remaining.toFixed(4)) : 0;
 }
 
@@ -291,7 +390,6 @@ function resetForm() {
 
 async function handleSubmit() {
   if (totalRequired.value > currentMaxBalance.value) {
-    // Rely on UI red text, but safe guard here too
     return;
   }
   
@@ -303,6 +401,14 @@ async function handleSubmit() {
 
   try {
     const opId = await wallet.sendTransaction(targets, selectedSource.value);
+    
+    // Mark addresses as used in address book
+    targets.forEach(t => {
+      if (t.address) {
+        addressBook.markAsUsed(t.address);
+      }
+    });
+    
     successTxId.value = opId;
     setTimeout(() => {
         wallet.fetchBalance(); 
@@ -343,5 +449,26 @@ input[type=number] {
 .slide-up-enter-from, .slide-up-leave-to {
   transform: translateY(100%);
   opacity: 0;
+}
+
+/* Modal Transitions */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-active .glass,
+.modal-leave-active .glass {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modal-enter-from .glass {
+  transform: scale(0.9);
+}
+.modal-leave-to .glass {
+  transform: scale(0.9);
 }
 </style>
