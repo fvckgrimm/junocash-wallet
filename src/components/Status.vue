@@ -175,8 +175,9 @@ async function checkStatus() {
   }
   
   try {
-    const info = await invoke<any>('get_blockchain_info', { 
-        port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass 
+    const info = await invoke<any>('get_blockchain_info', {
+        host: node.rpcHost,
+        port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
     });
     
     // Success path

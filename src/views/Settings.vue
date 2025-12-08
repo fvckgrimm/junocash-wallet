@@ -83,26 +83,37 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- RPC Host -->
+            <div class="space-y-2">
+              <label class="text-xs font-semibold text-gray-500 ml-1">RPC Host</label>
+              <input
+                v-model="rpcHost"
+                type="text"
+                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                placeholder="127.0.0.1"
+              />
+            </div>
+
             <!-- Username -->
             <div class="space-y-2">
               <label class="text-xs font-semibold text-gray-500 ml-1">RPC User</label>
-              <input 
-                v-model="rpcUser" 
-                type="text" 
+              <input
+                v-model="rpcUser"
+                type="text"
                 class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
               />
             </div>
 
             <!-- Password -->
-            <div class="space-y-2 relative">
+            <div class="space-y-2 relative md:col-span-2">
               <label class="text-xs font-semibold text-gray-500 ml-1">RPC Password</label>
               <div class="relative">
-                <input 
-                  v-model="rpcPass" 
-                  :type="showPass ? 'text' : 'password'" 
+                <input
+                  v-model="rpcPass"
+                  :type="showPass ? 'text' : 'password'"
                   class="w-full pl-4 pr-12 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
                 />
-                <button 
+                <button
                   @click="showPass = !showPass"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                 >
@@ -383,10 +394,11 @@ const wallet = useWalletStore();
 // Form State
 const binPath = ref('');
 const dataDir = ref('');
+const rpcHost = ref('127.0.0.1');
 const rpcUser = ref('');
 const rpcPass = ref('');
-const randomxFastMode = ref(false); 
-const donationPercent = ref(5); 
+const randomxFastMode = ref(false);
+const donationPercent = ref(5);
 const showPass = ref(false);
 
 // UI State
@@ -401,6 +413,7 @@ onMounted(async () => {
   await node.loadSettings();
   binPath.value = node.binPath;
   dataDir.value = node.dataDir;
+  rpcHost.value = node.rpcHost;
   rpcUser.value = node.rpcUser;
   rpcPass.value = node.rpcPass;
   randomxFastMode.value = node.randomxFastMode;
@@ -420,10 +433,11 @@ async function pickDir() {
 
 async function saveToStore() {
   await node.saveSettings(
-    binPath.value, 
+    binPath.value,
     dataDir.value,
     rpcUser.value,
     rpcPass.value,
+    rpcHost.value,
     randomxFastMode.value,
     donationPercent.value
   );

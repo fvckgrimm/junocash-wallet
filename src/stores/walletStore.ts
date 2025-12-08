@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia';
-import { invoke } from '@tauri-apps/api/core';
-import { useNodeStore } from './nodeStore';
+import { defineStore } from "pinia";
+import { invoke } from "@tauri-apps/api/core";
+import { useNodeStore } from "./nodeStore";
 
 // Interfaces for Type Safety
 interface BalanceResponse {
@@ -13,7 +13,7 @@ interface Transaction {
   txid: string;
   amount: number;
   confirmations: number;
-  category: 'send' | 'receive' | 'generate' | 'immature';
+  category: "send" | "receive" | "generate" | "immature";
   time: number;
   address?: string;
 }
@@ -21,7 +21,7 @@ interface Transaction {
 export interface SpendableAddress {
   address: string;
   balance: number;
-  addr_type: 'transparent' | 'sapling' | 'unified';
+  addr_type: "transparent" | "sapling" | "unified";
 }
 
 export interface TxTarget {
@@ -32,14 +32,13 @@ export interface TxTarget {
 
 interface OpResult {
   id: string;
-  status: 'queued' | 'executing' | 'success' | 'failed';
+  status: "queued" | "executing" | "success" | "failed";
   error?: { message: string };
   result?: { txid: string };
   creation_time: number;
 }
 
-
-export const useWalletStore = defineStore('wallet', {
+export const useWalletStore = defineStore("wallet", {
   state: () => ({
     balance: {
       total: 0.0,
@@ -56,19 +55,23 @@ export const useWalletStore = defineStore('wallet', {
 
   getters: {
     // Helper to format balance for display
-    formattedBalance: (state) => state.balance.total.toFixed(4) + ' JUNO',
+    formattedBalance: (state) => state.balance.total.toFixed(4) + " JUNO",
     recentTransactions: (state) => {
       return state.transactions.slice().sort((a, b) => b.time - a.time);
     },
     minedBlocksCount: (state) => {
       // 'generate' = confirmed block, 'immature' = waiting for 100 confs
-      return state.transactions.filter(tx => tx.category === 'generate' || tx.category === 'immature').length;
+      return state.transactions.filter(
+        (tx) => tx.category === "generate" || tx.category === "immature",
+      ).length;
     },
     minedTotalAmount: (state) => {
       return state.transactions
-        .filter(tx => tx.category === 'generate' || tx.category === 'immature')
+        .filter(
+          (tx) => tx.category === "generate" || tx.category === "immature",
+        )
         .reduce((sum, tx) => sum + tx.amount, 0);
-    }
+    },
   },
 
   actions: {
@@ -77,7 +80,8 @@ export const useWalletStore = defineStore('wallet', {
       if (!node.isConnected) return;
 
       try {
-        const res = await invoke<BalanceResponse>('get_balance', {
+        const res = await invoke<BalanceResponse>("get_balance", {
+          host: node.rpcHost,
           port: node.rpcPort,
           user: node.rpcUser,
           pass: node.rpcPass,
@@ -90,7 +94,7 @@ export const useWalletStore = defineStore('wallet', {
           private: parseFloat(res.private),
         };
       } catch (err: any) {
-        console.error('Failed to fetch balance:', err);
+        console.error("Failed to fetch balance:", err);
         this.lastError = err.toString();
       }
     },
@@ -101,7 +105,8 @@ export const useWalletStore = defineStore('wallet', {
 
       // We return the raw string directly to the component
       // to keep the footprint small and transient.
-      return await invoke<string>('get_seed_phrase', {
+      return await invoke<string>("get_seed_phrase", {
+        host: node.rpcHost,
         port: node.rpcPort,
         user: node.rpcUser,
         pass: node.rpcPass,
@@ -113,8 +118,11 @@ export const useWalletStore = defineStore('wallet', {
       if (!node.isConnected) return;
 
       try {
-        const res = await invoke<any>('get_all_addresses', {
-          port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass,
+        const res = await invoke<any>("get_all_addresses", {
+          host: node.rpcHost,
+          port: node.rpcPort,
+          user: node.rpcUser,
+          pass: node.rpcPass,
         });
 
         // Parse Juno 'listaddresses' output
@@ -124,7 +132,10 @@ export const useWalletStore = defineStore('wallet', {
         if (Array.isArray(res)) {
           for (const account of res) {
             // 1. Get Transparent
-            if (account.transparent && Array.isArray(account.transparent.addresses)) {
+            if (
+              account.transparent &&
+              Array.isArray(account.transparent.addresses)
+            ) {
               flatList.push(...account.transparent.addresses);
             }
             // 2. Get Unified (Orchard/Juno Standard)
@@ -159,8 +170,11 @@ export const useWalletStore = defineStore('wallet', {
 
       try {
         // z_getoperationresult returns ONLY finished operations (success or failed)
-        const res = await invoke<OpResult[]>('get_operation_status', {
-          port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
+        const res = await invoke<OpResult[]>("get_operation_status", {
+          host: node.rpcHost,
+          port: node.rpcPort,
+          user: node.rpcUser,
+          pass: node.rpcPass,
         });
 
         if (Array.isArray(res) && res.length > 0) {
@@ -169,7 +183,7 @@ export const useWalletStore = defineStore('wallet', {
           this.notifications.unshift(...res);
 
           // If we found a success, trigger a balance refresh
-          if (res.some(op => op.status === 'success')) {
+          if (res.some((op) => op.status === "success")) {
             this.fetchBalance();
             this.fetchTransactions();
           }
@@ -184,14 +198,15 @@ export const useWalletStore = defineStore('wallet', {
       if (!node.isConnected) return;
 
       try {
-        const res = await invoke<Transaction[]>('list_transactions', {
+        const res = await invoke<Transaction[]>("list_transactions", {
+          host: node.rpcHost,
           port: node.rpcPort,
           user: node.rpcUser,
           pass: node.rpcPass,
         });
         this.transactions = res;
       } catch (err: any) {
-        console.error('Failed to fetch transactions:', err);
+        console.error("Failed to fetch transactions:", err);
       }
     },
 
@@ -200,9 +215,15 @@ export const useWalletStore = defineStore('wallet', {
       if (!node.isConnected) return;
 
       try {
-        const res = await invoke<SpendableAddress[]>('get_spendable_addresses', {
-          port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
-        });
+        const res = await invoke<SpendableAddress[]>(
+          "get_spendable_addresses",
+          {
+            host: node.rpcHost,
+            port: node.rpcPort,
+            user: node.rpcUser,
+            pass: node.rpcPass,
+          },
+        );
         this.spendableAddresses = res;
       } catch (e) {
         console.error(e);
@@ -216,9 +237,10 @@ export const useWalletStore = defineStore('wallet', {
 
       try {
         // Pass "fromAddress" or null (rust treats Option<String> as null|string)
-        const opId = await invoke<string>('send_transaction', {
+        const opId = await invoke<string>("send_transaction", {
           fromAddress: fromAddress || null,
           targets,
+          host: node.rpcHost,
           port: node.rpcPort,
           user: node.rpcUser,
           pass: node.rpcPass,
@@ -244,6 +266,6 @@ export const useWalletStore = defineStore('wallet', {
       }, intervalMs);
 
       return () => clearInterval(interval); // Return cleanup function
-    }
+    },
   },
 });

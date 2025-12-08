@@ -164,6 +164,7 @@ async function generateNew() {
   try {
     const newAddr = await invoke<string>('get_new_address', {
       typeParam: "unified",
+      host: node.rpcHost,
       port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
     });
     await wallet.fetchAddresses();

@@ -305,6 +305,7 @@ onMounted(async () => {
 async function fetchMiningInfo() {
   try {
     const res = await invoke<any>('get_mining_info', {
+      host: node.rpcHost,
       port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
     });
     
@@ -318,6 +319,7 @@ async function fetchMiningInfo() {
     if (miningInfo.blocks > 0) {
       const subsidy = await invoke<number>('get_block_subsidy', {
         height: miningInfo.blocks,
+        host: node.rpcHost,
         port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
       });
       miningInfo.reward = subsidy;
@@ -333,10 +335,11 @@ async function toggleMining() {
   
   try {
     await invoke('set_mining', {
-      enabled: newState, 
-      threads: selectedThreads.value, 
-      port: node.rpcPort, 
-      user: node.rpcUser, 
+      enabled: newState,
+      threads: selectedThreads.value,
+      host: node.rpcHost,
+      port: node.rpcPort,
+      user: node.rpcUser,
       pass: node.rpcPass
     });
     setTimeout(fetchMiningInfo, 1000);
@@ -363,6 +366,7 @@ async function performShield() {
   try {
     const opId = await invoke<string>('shield_coinbase', {
       toAddress: shieldToAddress.value,
+      host: node.rpcHost,
       port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
     });
     lastOperation.value = opId;

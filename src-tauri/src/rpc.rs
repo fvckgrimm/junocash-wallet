@@ -4,12 +4,13 @@ use serde_json::{json, Value};
 pub async fn call_rpc(
     method: &str,
     params: Vec<Value>,
+    host: &str,
     port: u16,
     user: &str,
     pass: &str,
 ) -> Result<Value, String> {
     let client = Client::new();
-    let url = format!("http://127.0.0.1:{}", port);
+    let url = format!("http://{}:{}", host, port);
 
     let response = client
         .post(&url)

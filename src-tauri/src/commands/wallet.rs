@@ -22,8 +22,8 @@ pub struct TxTarget {
 // --- READ OPERATIONS ---
 
 #[command]
-pub async fn get_seed_phrase(port: u16, user: String, pass: String) -> Result<String, String> {
-    let res = call_rpc("z_getseedphrase", vec![], port, &user, &pass).await?;
+pub async fn get_seed_phrase(host: String, port: u16, user: String, pass: String) -> Result<String, String> {
+    let res = call_rpc("z_getseedphrase", vec![], &host, port, &user, &pass).await?;
 
     // The RPC returns a file path where the seed phrase is stored
     let file_path = res.as_str().ok_or_else(|| {
@@ -52,26 +52,26 @@ pub async fn get_seed_phrase(port: u16, user: String, pass: String) -> Result<St
 }
 
 #[command]
-pub async fn get_balance(port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn get_balance(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
     // z_gettotalbalance provides the most complete view (transparent + shielded)
     // Returns: { "total": 0.0, "transparent": 0.0, "private": 0.0 }
-    call_rpc("z_gettotalbalance", vec![], port, &user, &pass).await
+    call_rpc("z_gettotalbalance", vec![], &host, port, &user, &pass).await
 }
 
 #[command]
-pub async fn list_transactions(port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn list_transactions(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
     // listtransactions accounts for transparent txs.
     // z_listreceivedbyaddress is needed for shielded.
     // For a simple UI, we might just query 'listtransactions' for now.
     // Params: account ("*"), count (20), skip (0)
     let params = vec![json!("*"), json!(50), json!(0)];
-    call_rpc("listtransactions", params, port, &user, &pass).await
+    call_rpc("listtransactions", params, &host, port, &user, &pass).await
 }
 
 #[command]
-pub async fn get_block_count(port: u16, user: String, pass: String) -> Result<u64, String> {
+pub async fn get_block_count(host: String, port: u16, user: String, pass: String) -> Result<u64, String> {
     // Call the "getblockcount" RPC method
-    let res = call_rpc("getblockcount", vec![], port, &user, &pass).await?;
+    let res = call_rpc("getblockcount", vec![], &host, port, &user, &pass).await?;
 
     // Attempt to parse the result as a number (u64)
     res.as_u64()
@@ -79,25 +79,26 @@ pub async fn get_block_count(port: u16, user: String, pass: String) -> Result<u6
 }
 
 #[command]
-pub async fn get_all_addresses(port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn get_all_addresses(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
     // 'listaddresses' returns the hierarchical structure of the wallet
-    call_rpc("listaddresses", vec![], port, &user, &pass).await
+    call_rpc("listaddresses", vec![], &host, port, &user, &pass).await
 }
 
 #[command]
-pub async fn get_operation_status(port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn get_operation_status(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
     // z_getoperationresult returns the result AND removes it from the node's memory list
-    call_rpc("z_getoperationresult", vec![], port, &user, &pass).await
+    call_rpc("z_getoperationresult", vec![], &host, port, &user, &pass).await
 }
 
 #[command]
-pub async fn get_blockchain_info(port: u16, user: String, pass: String) -> Result<Value, String> {
+pub async fn get_blockchain_info(host: String, port: u16, user: String, pass: String) -> Result<Value, String> {
     // Returns detailed info including 'verificationprogress', 'blocks', 'headers'
-    call_rpc("getblockchaininfo", vec![], port, &user, &pass).await
+    call_rpc("getblockchaininfo", vec![], &host, port, &user, &pass).await
 }
 
 #[command]
 pub async fn get_spendable_addresses(
+    host: String,
     port: u16,
     user: String,
     pass: String,
@@ -107,7 +108,7 @@ pub async fn get_spendable_addresses(
 
     // 1. Get Transparent UTXOs
     // listunspent 0 9999999
-    let t_res = call_rpc("listunspent", vec![json!(0)], port, &user, &pass).await?;
+    let t_res = call_rpc("listunspent", vec![json!(0)], &host, port, &user, &pass).await?;
     if let Some(utxos) = t_res.as_array() {
         for u in utxos {
             if let (Some(addr), Some(amount)) = (u["address"].as_str(), u["amount"].as_f64()) {
@@ -119,7 +120,7 @@ pub async fn get_spendable_addresses(
 
     // 2. Get Shielded Notes
     // z_listunspent
-    let z_res = call_rpc("z_listunspent", vec![], port, &user, &pass).await?;
+    let z_res = call_rpc("z_listunspent", vec![], &host, port, &user, &pass).await?;
     if let Some(notes) = z_res.as_array() {
         for n in notes {
             if let (Some(addr), Some(amount)) = (n["address"].as_str(), n["amount"].as_f64()) {
@@ -162,6 +163,7 @@ pub async fn get_spendable_addresses(
 pub async fn send_transaction(
     from_address: Option<String>,
     targets: Vec<TxTarget>,
+    host: String,
     port: u16,
     user: String,
     pass: String,
@@ -193,13 +195,14 @@ pub async fn send_transaction(
         json!(0.0001),       // fee
     ];
 
-    let res = call_rpc("z_sendmany", params, port, &user, &pass).await?;
+    let res = call_rpc("z_sendmany", params, &host, port, &user, &pass).await?;
     Ok(res.as_str().unwrap_or("").to_string())
 }
 
 #[command]
 pub async fn get_new_address(
     type_param: Option<String>,
+    host: String,
     port: u16,
     user: String,
     pass: String,
@@ -211,6 +214,7 @@ pub async fn get_new_address(
     let res = call_rpc(
         "z_getnewaddress",
         vec![json!(addr_type)],
+        &host,
         port,
         &user,
         &pass,
