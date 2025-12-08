@@ -117,10 +117,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import Status from './Status.vue';
 
-const props = defineProps<{
+defineProps<{
   isOpen: boolean
 }>();
 
