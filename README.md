@@ -2,7 +2,7 @@
 
 A modern, privacy-focused desktop wallet for JunoCash built with Tauri, Vue 3, and Rust.
 
-![JunoCash Wallet Dashboard](assets/dash-synced-hidden.png)
+![JunoCash Wallet Dashboard](assets/new-dash-synced-hidden.png)
 
 ## Features
 
