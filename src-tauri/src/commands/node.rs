@@ -1,7 +1,29 @@
+use crate::rpc::call_rpc;
 use crate::state::NodeState;
+use serde_json::Value;
 use std::path::PathBuf;
 use std::process::Command;
 use tauri::{command, State};
+
+#[command]
+pub async fn get_network_info(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Value, String> {
+    call_rpc("getnetworkinfo", vec![], &host, port, &user, &pass).await
+}
+
+#[command]
+pub async fn get_peer_info(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Value, String> {
+    call_rpc("getpeerinfo", vec![], &host, port, &user, &pass).await
+}
 
 #[command]
 pub fn get_default_juno_paths() -> serde_json::Value {

@@ -5,6 +5,7 @@ import Receive from '../views/Receive.vue';
 import Mining from '../views/Mining.vue';
 import Settings from '../views/Settings.vue';
 import History from '../views/History.vue';
+import Network from '../views/Network.vue';
 import AddressBook from '../views/AddressBook.vue';
 
 const router = createRouter({
@@ -16,6 +17,7 @@ const router = createRouter({
     { path: '/history', component: History },
     { path: '/address-book', component: AddressBook },
     { path: '/mining', component: Mining },
+    { path: '/network', component: Network },
     { path: '/settings', component: Settings },
   ]
 });

@@ -86,6 +86,8 @@ fn main() {
             node::launch_node,
             node::stop_node,
             node::get_default_juno_paths,
+            node::get_network_info,
+            node::get_peer_info,
             // Mining
             mining::get_mining_info,
             mining::get_block_subsidy,
