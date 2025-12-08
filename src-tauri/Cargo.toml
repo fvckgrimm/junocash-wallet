@@ -27,3 +27,4 @@ tauri-plugin-dialog = "2.0.0"
 reqwest = { version = "0.12", features = ["json", "blocking"] }
 hex = "0.4"
 dirs = "5.0"
+zeroize = { version = "1.7", features = ["derive"] }

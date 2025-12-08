@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use tauri::command;
+use zeroize::Zeroizing;
 
 #[derive(Serialize)]
 pub struct SpendableAddress {
@@ -29,14 +30,25 @@ pub async fn get_seed_phrase(port: u16, user: String, pass: String) -> Result<St
         "Failed to retrieve seed phrase path. Is the wallet encrypted/locked?".to_string()
     })?;
 
-    // Read the file contents
-    let contents = std::fs::read_to_string(file_path)
-        .map_err(|e| format!("Failed to read seed phrase file: {}", e))?;
+    // Clean up the path string
+    let path_str = file_path.trim();
 
-    // Delete the file immediately after reading for security
-    let _ = std::fs::remove_file(file_path);
-
-    Ok(contents)
+    // Zeroizing ensures that 'seed_wrapper' is wiped from memory when this function ends.
+    let seed_wrapper = Zeroizing::new(
+        std::fs::read_to_string(path_str)
+            .map_err(|e| format!("Failed to read seed phrase file: {}", e))?,
+    );
+    // We attempt to remove it; if it fails, we log it but don't stop (we already have the seed)
+    if let Err(e) = std::fs::remove_file(path_str) {
+        println!(
+            "SECURITY WARNING: Failed to delete seed file at {}: {}",
+            path_str, e
+        );
+    }
+    // Note: We must convert back to a standard String to pass it to the frontend (Tauri/Serde).
+    // This creates a copy that is sent to the UI, but the 'seed_wrapper' staying in Rust RAM
+    // will be zeroed out immediately after this line executes.
+    Ok(seed_wrapper.to_string())
 }
 
 #[command]
