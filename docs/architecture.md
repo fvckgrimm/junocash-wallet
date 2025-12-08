@@ -232,7 +232,7 @@ pub async fn call_rpc(
 **How it works:**
 1. Constructs JSON-RPC request with id, method, params
 2. Uses HTTP Basic Auth with RPC credentials
-3. POSTs to `http://127.0.0.1:{port}`
+3. POSTs to `http://{host}:{port}` (configurable host)
 4. Parses response, extracts result or error
 5. Returns result or error string
 
@@ -283,10 +283,10 @@ pub struct NodeState {
 - Signing happens in daemon
 
 ### Network Security
-- RPC only listens on localhost (127.0.0.1)
-- No remote connections by default
+- RPC listens on configurable host (default: localhost/127.0.0.1)
+- No remote connections by default (when using localhost)
 - HTTP Basic Auth required for all requests
-- No TLS (not needed for localhost)
+- No TLS (not needed for local connections)
 
 ## Build Process
 
