@@ -59,6 +59,15 @@ export const useWalletStore = defineStore('wallet', {
     formattedBalance: (state) => state.balance.total.toFixed(4) + ' JUNO',
     recentTransactions: (state) => {
       return state.transactions.slice().sort((a, b) => b.time - a.time);
+    },
+    minedBlocksCount: (state) => {
+      // 'generate' = confirmed block, 'immature' = waiting for 100 confs
+      return state.transactions.filter(tx => tx.category === 'generate' || tx.category === 'immature').length;
+    },
+    minedTotalAmount: (state) => {
+      return state.transactions
+        .filter(tx => tx.category === 'generate' || tx.category === 'immature')
+        .reduce((sum, tx) => sum + tx.amount, 0);
     }
   },
 

@@ -23,19 +23,14 @@
         <div class="glass rounded-3xl p-8 relative overflow-hidden flex flex-col items-center justify-center text-center transition-all duration-500"
              :class="isMining ? 'border-purple-500/30 shadow-[0_0_50px_rgba(147,51,234,0.1)]' : 'border-white/5'">
           
-          <!-- Background Ambient Glow -->
           <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 transition-opacity duration-1000" :class="{ 'opacity-100': isMining }"></div>
           
-          <!-- POWER BUTTON -->
           <button 
             @click="toggleMining"
             class="relative z-10 w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 group"
             :class="isMining ? 'bg-gray-900 shadow-[0_0_40px_rgba(168,85,247,0.6)] scale-105' : 'bg-white/5 hover:bg-white/10 shadow-xl active:scale-95'"
           >
-            <!-- Spinning Ring when active -->
             <div class="absolute inset-0 rounded-full border-2 border-dashed border-purple-500/50 animate-spin-slow" v-if="isMining"></div>
-            
-            <!-- Icon -->
             <svg class="w-12 h-12 transition-colors duration-300" 
                  :class="isMining ? 'text-purple-400 drop-shadow-[0_0_10px_rgba(168,85,247,1)]' : 'text-gray-400 group-hover:text-white'"
                  fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -50,7 +45,6 @@
             {{ isMining ? 'Allocating CPU cycles to proof-of-work consensus.' : 'Start the miner to begin generating hashes.' }}
           </p>
 
-          <!-- Thread Configuration (only visible when stopped) -->
           <div v-if="!isMining" class="relative z-10 mt-6 w-full max-w-xs">
             <label class="block text-xs font-bold text-gray-500 uppercase mb-2">CPU Threads</label>
             <div class="flex items-center gap-3">
@@ -67,12 +61,7 @@
             </div>
             <div class="flex justify-between text-xs text-gray-600 mt-1">
               <span>1 Core</span>
-              <button 
-                @click="selectedThreads = -1" 
-                class="text-purple-400 hover:text-purple-300 transition-colors"
-              >
-                Auto
-              </button>
+              <button @click="selectedThreads = -1" class="text-purple-400 hover:text-purple-300 transition-colors">Auto</button>
               <span>{{ maxThreads }} Cores</span>
             </div>
           </div>
@@ -87,7 +76,6 @@
              <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wide">CPU Performance</h3>
           </div>
 
-          <!-- Large Hashrate Display -->
           <div class="mb-6">
             <p class="text-xs text-gray-500 uppercase font-semibold mb-1">My Hashrate</p>
             <div class="flex items-baseline gap-2">
@@ -96,7 +84,6 @@
               </span>
               <span class="text-lg text-gray-500 font-medium">{{ formatHashrateUnit(miningInfo.localsolps) }}</span>
             </div>
-            <!-- Fake visualizer bar -->
             <div class="mt-4 h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
               <div class="h-full bg-blue-500 rounded-full transition-all duration-1000" 
                    :class="{ 'animate-pulse': isMining }"
@@ -120,42 +107,84 @@
 
       </div>
 
-      <!-- RIGHT COLUMN: Network & Privacy -->
+      <!-- RIGHT COLUMN -->
       <div class="lg:col-span-7 flex flex-col gap-6 animate-slide-up" style="animation-delay: 100ms;">
         
+        <!-- MY STATS ROW (New) -->
+        <div class="glass p-5 rounded-2xl border border-white/5 flex items-center justify-between gap-6">
+           <!-- Blocks Mined -->
+           <div class="flex-1 flex items-center gap-4">
+              <div class="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              </div>
+              <div>
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Blocks Mined</p>
+                <p class="text-xl font-mono font-bold text-white">{{ wallet.minedBlocksCount }}</p>
+              </div>
+           </div>
+
+           <div class="w-px h-8 bg-white/5"></div>
+
+           <!-- Earnings -->
+           <div class="flex-1 flex items-center gap-4">
+              <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div>
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Mined Earned</p>
+                <p class="text-xl font-mono font-bold text-white">{{ wallet.minedTotalAmount.toFixed(4) }} <span class="text-sm text-gray-500">JUNO</span></p>
+              </div>
+           </div>
+        </div>
+
         <!-- NETWORK STATS GRID -->
         <div class="grid grid-cols-2 gap-4">
-          <!-- Network Hash -->
           <div class="glass p-5 rounded-2xl border border-white/5 hover:bg-white/[0.02] transition-colors">
             <div class="text-xs text-gray-500 font-bold uppercase mb-2">Network Hashrate</div>
             <div class="text-xl font-mono font-bold text-indigo-300">
               {{ formatHashrate(miningInfo.networksolps) }}
             </div>
           </div>
-          
-          <!-- Difficulty -->
           <div class="glass p-5 rounded-2xl border border-white/5 hover:bg-white/[0.02] transition-colors">
             <div class="text-xs text-gray-500 font-bold uppercase mb-2">Difficulty</div>
             <div class="text-xl font-mono font-bold text-amber-300">
               {{ formatDiff(miningInfo.difficulty) }}
             </div>
           </div>
-
-          <!-- Block Height -->
           <div class="glass p-5 rounded-2xl border border-white/5 hover:bg-white/[0.02] transition-colors">
             <div class="text-xs text-gray-500 font-bold uppercase mb-2">Block Height</div>
             <div class="text-xl font-mono font-bold text-emerald-300">
               {{ miningInfo.blocks.toLocaleString() }}
             </div>
           </div>
-
-          <!-- Reward -->
           <div class="glass p-5 rounded-2xl border border-white/5 hover:bg-white/[0.02] transition-colors">
             <div class="text-xs text-gray-500 font-bold uppercase mb-2">Block Reward</div>
             <div class="text-xl font-mono font-bold text-pink-300">
               {{ miningInfo.reward }} JUNO
             </div>
           </div>
+        </div>
+
+        <!-- DONATION STATUS -->
+        <div class="glass p-5 rounded-2xl border border-white/5 flex items-center justify-between gap-4">
+           <div>
+             <h3 class="text-sm font-bold text-gray-200 uppercase tracking-wide mb-1">Community Support</h3>
+             <p class="text-xs text-gray-400">
+               <span v-if="node.donationPercent > 0">
+                 You are contributing <span class="text-emerald-400 font-bold">{{ node.donationPercent }}%</span> of block rewards to dev.
+               </span>
+               <span v-else>
+                 Donations are currently disabled.
+               </span>
+             </p>
+           </div>
+           
+           <div class="w-10 h-10 rounded-full flex items-center justify-center border transition-colors"
+                :class="node.donationPercent > 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white/5 border-white/5 text-gray-600'">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+           </div>
         </div>
 
         <!-- AUTO-SHIELDING CONSOLE -->
@@ -171,7 +200,6 @@
               </div>
             </div>
             
-            <!-- Toggle Switch -->
             <button 
               @click="autoShieldEnabled = !autoShieldEnabled"
               class="w-12 h-6 rounded-full p-1 transition-colors duration-300 ease-in-out relative"
@@ -185,7 +213,6 @@
           </div>
 
           <div class="flex-1 flex flex-col gap-4">
-             <!-- Target Address Selector -->
              <div class="relative group">
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Destination Shielded Address</label>
                 <div class="relative">
@@ -202,7 +229,6 @@
                 </div>
              </div>
 
-             <!-- Console Log Output -->
              <div class="mt-auto bg-black/40 rounded-xl p-4 border border-white/5 font-mono text-xs h-24 overflow-y-auto custom-scrollbar flex flex-col-reverse">
                 <div v-if="lastOperation" class="text-emerald-400">
                   <span class="text-gray-600">[{{ new Date().toLocaleTimeString() }}]</span> Success: OpID {{ lastOperation.substring(0, 12) }}...
@@ -249,7 +275,7 @@ const lastOperation = ref('');
 
 // Thread configuration
 const maxThreads = ref(navigator.hardwareConcurrency || 4);
-const selectedThreads = ref(-1); // -1 = auto (uses ~half)
+const selectedThreads = ref(-1); 
 
 // Data State
 const miningInfo = reactive({
@@ -265,8 +291,9 @@ let statsInterval: any = null;
 let shieldInterval: any = null;
 
 onMounted(async () => {
+  await node.loadSettings();
+
   await wallet.fetchAddresses();
-  // Auto-select first unified address
   const uni = wallet.addresses.find(a => a.startsWith('j1'));
   if (uni) shieldToAddress.value = uni;
   else if (wallet.addresses.length > 0) shieldToAddress.value = wallet.addresses[0];
@@ -302,7 +329,7 @@ async function fetchMiningInfo() {
 
 async function toggleMining() {
   const newState = !isMining.value;
-  isMining.value = newState; // Optimistic update
+  isMining.value = newState; 
   
   try {
     await invoke('set_mining', {
@@ -315,16 +342,15 @@ async function toggleMining() {
     setTimeout(fetchMiningInfo, 1000);
   } catch(e) {
     console.error(e);
-    isMining.value = !newState; // Revert on error
+    isMining.value = !newState; 
   }
 }
 
-// Watcher for Auto-Shielding
 watch(autoShieldEnabled, (enabled) => {
   if (enabled) {
     shieldInterval = setInterval(() => {
         if(isMining.value) performShield();
-    }, 300000); // 5 minutes
+    }, 300000); 
   } else {
     clearInterval(shieldInterval);
   }
@@ -355,7 +381,6 @@ function formatHashrate(val: number) {
   return val.toFixed(2) + ' H/s';
 }
 
-// Splitters for the large UI display
 function formatHashrateNumber(val: number) {
   if (!val) return '0.00';
   if (val >= 1_000_000) return (val / 1_000_000).toFixed(2);

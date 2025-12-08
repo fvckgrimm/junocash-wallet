@@ -41,7 +41,8 @@ pub async fn launch_node(
     rpc_port: u16,
     rpc_user: String,
     rpc_pass: String,
-    randomx_fast_mode: bool, // <--- NEW PARAMETER
+    randomx_fast_mode: bool,
+    donation_percent: u32,
     state: State<'_, NodeState>,
 ) -> Result<String, String> {
     let bin = PathBuf::from(&bin_path);
@@ -65,6 +66,12 @@ pub async fn launch_node(
     if randomx_fast_mode {
         cmd.arg("-randomxfastmode");
     }
+
+    // Donation Percentage (passed to C++ mapArgs["-donationpercentage"])
+    if donation_percent > 100 {
+        return Err("Donation percentage must be between 0 and 100".to_string());
+    }
+    cmd.arg(format!("-donationpercentage={}", donation_percent));
 
     let child = cmd.spawn().map_err(|e| format!("Failed to start: {}", e))?;
 

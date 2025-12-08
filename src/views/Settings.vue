@@ -1,10 +1,10 @@
 <template>
-  <div class="max-w-4xl mx-auto h-full flex flex-col p-2">
+  <div class="max-w-4xl mx-auto min-h-full flex flex-col p-2 pb-20">
     
     <!-- Header -->
     <div class="mb-8 px-2 animate-fade-in">
       <h1 class="text-2xl font-bold text-white tracking-tight">System Configuration</h1>
-      <p class="text-gray-400 text-sm">Configure your local node connection and storage paths.</p>
+      <p class="text-gray-400 text-sm">Configure your local node connection, mining preferences, and storage paths.</p>
     </div>
 
     <!-- Main Settings Card -->
@@ -116,32 +116,33 @@
           <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-3">
              <svg class="text-amber-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
              <p class="text-xs text-amber-200/80 leading-relaxed">
-               These credentials must match your local <span class="font-mono text-amber-100">junocash.conf</span> file. If you launch the node via this wallet, we will attempt to configure this automatically.
+               These credentials must match your local <span class="font-mono text-amber-100">junocash.conf</span> file.
              </p>
           </div>
         </div>
 
-        <!-- SECTION 3: PERFORMANCE OPTIONS -->
+        <!-- SECTION 3: MINING & PERFORMANCE -->
         <div class="space-y-5">
            <div class="flex items-center gap-3 border-b border-white/5 pb-2">
             <div class="p-1.5 bg-purple-500/20 rounded text-purple-400">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20" /></svg>
             </div>
-            <h2 class="text-sm font-bold text-gray-200 uppercase tracking-wider">Mining Performance</h2>
+            <h2 class="text-sm font-bold text-gray-200 uppercase tracking-wider">Mining Configuration</h2>
           </div>
 
-          <div class="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5">
+          <!-- RandomX Fast Mode Toggle -->
+          <div class="flex items-center justify-between p-4 bg-white/[0.02] rounded-xl border border-white/5 transition-colors hover:bg-white/[0.04]">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <h3 class="text-sm font-bold text-white">RandomX Fast Mode</h3>
-                <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 rounded">Requires 2GB RAM</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 rounded">2GB RAM</span>
+                <span class="ml-2 text-[10px] text-gray-500 uppercase tracking-wide">(Requires Restart)</span>
               </div>
               <p class="text-xs text-gray-400 leading-relaxed max-w-2xl">
-                Uses a large lookup table (~2GB) for faster mining. Significantly improves hashrate but increases memory usage. Only applies when launching the node from this wallet.
+                Allocates ~2GB of memory for a faster RandomX lookup table. Significantly improves hashrate.
               </p>
             </div>
             
-            <!-- Toggle Switch -->
             <button 
               @click="randomxFastMode = !randomxFastMode"
               class="ml-4 w-12 h-6 rounded-full p-1 transition-colors duration-300 ease-in-out relative flex-shrink-0"
@@ -152,6 +153,43 @@
                 :class="randomxFastMode ? 'translate-x-6' : 'translate-x-0'"
               ></div>
             </button>
+          </div>
+
+          <!-- Developer Donation Slider -->
+          <div class="p-5 bg-white/[0.02] rounded-xl border border-white/5 space-y-4 transition-colors hover:bg-white/[0.04]">
+             <div class="flex justify-between items-center">
+                <div>
+                   <div class="flex items-center gap-2">
+                     <h3 class="text-sm font-bold text-white">Developer Donation</h3>
+                     <span class="text-[10px] text-gray-500 uppercase tracking-wide">(Requires Restart)</span>
+                   </div>
+                   <p class="text-xs text-gray-400 mt-1">Automatically donate a percentage of block rewards to the Juno Cash developers.</p>
+                </div>
+                <div class="text-right">
+                   <span class="text-2xl font-mono font-bold" 
+                         :class="donationPercent > 0 ? 'text-emerald-400' : 'text-gray-500'">
+                      {{ donationPercent }}%
+                   </span>
+                </div>
+             </div>
+             
+             <!-- Slider -->
+             <div class="relative pt-1">
+                <input 
+                  type="range" 
+                  v-model.number="donationPercent" 
+                  min="0" max="100" step="1"
+                  class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                />
+             </div>
+             
+             <div class="flex justify-between text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+               <span>0% (Disabled)</span>
+               <span>25%</span>
+               <span>50%</span>
+               <span>75%</span>
+               <span>100%</span>
+             </div>
           </div>
         </div>
 
@@ -218,7 +256,8 @@ const binPath = ref('');
 const dataDir = ref('');
 const rpcUser = ref('');
 const rpcPass = ref('');
-const randomxFastMode = ref(false); // <--- NEW
+const randomxFastMode = ref(false); 
+const donationPercent = ref(5); // Default 5%
 const showPass = ref(false);
 
 // UI State
@@ -235,7 +274,8 @@ onMounted(async () => {
   dataDir.value = node.dataDir;
   rpcUser.value = node.rpcUser;
   rpcPass.value = node.rpcPass;
-  randomxFastMode.value = node.randomxFastMode; // <--- NEW
+  randomxFastMode.value = node.randomxFastMode;
+  donationPercent.value = node.donationPercent;
 });
 
 // Actions
@@ -255,7 +295,8 @@ async function saveToStore() {
     dataDir.value,
     rpcUser.value,
     rpcPass.value,
-    randomxFastMode.value // <--- NEW
+    randomxFastMode.value,
+    donationPercent.value
   );
 }
 
@@ -277,16 +318,18 @@ async function launchNode() {
   await saveToStore();
 
   try {
+    // Pass all parameters to the Rust backend
     await invoke('launch_node', {
       binPath: binPath.value,
       dataDir: dataDir.value,
       rpcPort: node.rpcPort,
       rpcUser: node.rpcUser,
       rpcPass: node.rpcPass,
-      randomxFastMode: randomxFastMode.value // <--- NEW
+      randomxFastMode: randomxFastMode.value,
+      donationPercent: donationPercent.value
     });
     
-    setStatus('success', `Node launch command sent${randomxFastMode.value ? ' with RandomX Fast Mode' : ''}. Establishing connection...`);
+    setStatus('success', `Node launch command sent. Donations set to ${donationPercent.value}%.`);
     
     // Attempt to verify connection shortly after
     setTimeout(() => {
@@ -326,5 +369,29 @@ async function connectOnly() {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Custom range slider styling for Webkit */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #10B981; /* Emerald-500 */
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  margin-top: -4px; /* Align vertical center if needed */
+}
+
+/* For Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #10B981;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 </style>
