@@ -51,6 +51,7 @@ export const useWalletStore = defineStore("wallet", {
     addresses: [] as string[],
     spendableAddresses: [] as SpendableAddress[],
     notifications: [] as OpResult[],
+    balancesVisible: localStorage.getItem("balancesVisible") !== "false",
   }),
 
   getters: {
@@ -75,6 +76,11 @@ export const useWalletStore = defineStore("wallet", {
   },
 
   actions: {
+    toggleBalanceVisibility() {
+      this.balancesVisible = !this.balancesVisible;
+      localStorage.setItem("balancesVisible", this.balancesVisible.toString());
+    },
+
     async fetchBalance() {
       const node = useNodeStore();
       if (!node.isConnected) return;

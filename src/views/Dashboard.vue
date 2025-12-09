@@ -10,12 +10,12 @@
       <div class="flex items-center gap-3">
         <!-- Balance Visibility Toggle -->
         <button 
-          @click="balancesVisible = !balancesVisible" 
+          @click="wallet.toggleBalanceVisibility()" 
           class="group flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-all active:scale-95"
-          :title="balancesVisible ? 'Hide balances' : 'Show balances'"
+          :title="wallet.balancesVisible ? 'Hide balances' : 'Show balances'"
         >
           <span class="text-indigo-400 group-hover:text-indigo-300 transition-colors">
-            <svg v-if="balancesVisible" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg v-if="wallet.balancesVisible" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
               <circle cx="12" cy="12" r="3"/>
             </svg>
@@ -54,7 +54,7 @@
             <h3 class="text-indigo-200 font-medium text-sm uppercase tracking-wider mb-1">Total Balance</h3>
             <div class="flex items-baseline gap-2">
               <transition name="balance-fade" mode="out-in">
-                <span v-if="balancesVisible" key="visible" class="text-5xl font-bold text-white tracking-tighter">
+                <span v-if="wallet.balancesVisible" key="visible" class="text-5xl font-bold text-white tracking-tighter">
                   {{ displayBalance.whole }}<span class="text-3xl text-indigo-300/70">.{{ displayBalance.decimal }}</span>
                 </span>
                 <span v-else key="hidden" class="text-5xl font-bold text-white tracking-tighter">
@@ -97,7 +97,7 @@
             <span class="text-sm text-gray-300 font-medium">Shielded</span>
           </div>
           <transition name="balance-fade" mode="out-in">
-            <p v-if="balancesVisible" key="visible" class="text-2xl font-bold text-white font-mono tracking-tight">
+            <p v-if="wallet.balancesVisible" key="visible" class="text-2xl font-bold text-white font-mono tracking-tight">
               {{ wallet.balance.private.toFixed(4) }}
             </p>
             <p v-else key="hidden" class="text-2xl font-bold text-white font-mono tracking-tight">
@@ -118,7 +118,7 @@
             <span class="text-sm text-gray-300 font-medium">Transparent</span>
           </div>
           <transition name="balance-fade" mode="out-in">
-            <p v-if="balancesVisible" key="visible" class="text-2xl font-bold text-white font-mono tracking-tight">
+            <p v-if="wallet.balancesVisible" key="visible" class="text-2xl font-bold text-white font-mono tracking-tight">
               {{ wallet.balance.transparent.toFixed(4) }}
             </p>
             <p v-else key="hidden" class="text-2xl font-bold text-white font-mono tracking-tight">
@@ -179,7 +179,7 @@
               <!-- Amount -->
               <div class="text-right">
                 <transition name="balance-fade" mode="out-in">
-                  <p v-if="balancesVisible" key="visible" class="font-bold text-lg tracking-tight font-mono" :class="tx.amount > 0 ? 'text-emerald-400' : 'text-gray-200'">
+                  <p v-if="wallet.balancesVisible" key="visible" class="font-bold text-lg tracking-tight font-mono" :class="tx.amount > 0 ? 'text-emerald-400' : 'text-gray-200'">
                     {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount }} <span class="text-sm font-sans font-medium text-gray-500">JUNO</span>
                   </p>
                   <p v-else key="hidden" class="font-bold text-lg tracking-tight font-mono text-gray-400">
@@ -212,7 +212,6 @@ const MineIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="curre
 
 const wallet = useWalletStore();
 const isRefreshing = ref(false);
-const balancesVisible = ref(true);
 
 // Animated CountUp Logic
 const animatedTotal = ref(0);
