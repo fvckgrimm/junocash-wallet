@@ -119,7 +119,7 @@ If this works but wallet button doesn't, report the bug.
 - Reduce thread count or improve cooling
 
 **Wrong algorithm:**
-- JunoCash uses Equihash
+- JunoCash uses RandomX
 - Make sure you're mining JunoCash, not another coin
 
 ### Computer Freezes When Mining

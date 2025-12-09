@@ -94,7 +94,7 @@
           <div class="grid grid-cols-2 gap-4">
              <div class="bg-white/[0.03] p-3 rounded-xl border border-white/5">
                <p class="text-[10px] text-gray-500 uppercase">Algorithm</p>
-               <p class="text-sm font-bold text-gray-300 mt-0.5">Equihash</p>
+               <p class="text-sm font-bold text-gray-300 mt-0.5">RandomX</p>
              </div>
              <div class="bg-white/[0.03] p-3 rounded-xl border border-white/5">
                <p class="text-[10px] text-gray-500 uppercase">Active Threads</p>
