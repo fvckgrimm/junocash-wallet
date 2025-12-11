@@ -849,7 +849,7 @@ async function runRecovery() {
 
     // --- 6. EXECUTE RECOVERY ---
     addLog("Injecting seed phrase...", 'info');
-    const recoverRes = await invoke<string>("recover_wallet", {
+    await invoke<string>("recover_wallet", {
       mnemonic: wizard.mnemonic,
       birthdayHeight: wizard.height || 0,
       host: node.rpcHost,
