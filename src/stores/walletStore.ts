@@ -105,6 +105,24 @@ export const useWalletStore = defineStore("wallet", {
       }
     },
 
+    async fetchAccounts() {
+      const node = useNodeStore();
+      if (!node.isConnected) return [];
+
+      try {
+        const res = await invoke<number[]>("get_accounts", {
+          host: node.rpcHost,
+          port: node.rpcPort,
+          user: node.rpcUser,
+          pass: node.rpcPass,
+        });
+        return res; // Returns [0, 1, 2...]
+      } catch (e) {
+        console.error("Failed to fetch accounts", e);
+        return [0]; // Default fallback
+      }
+    },
+
     async getSeedPhrase() {
       const node = useNodeStore();
       if (!node.isConnected) throw new Error("Node not connected");

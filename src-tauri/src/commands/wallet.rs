@@ -222,6 +222,28 @@ pub async fn get_spendable_addresses(
     Ok(results)
 }
 
+#[command]
+pub async fn get_accounts(
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<Vec<u64>, String> {
+    let res = call_rpc("z_listaccounts", vec![], &host, port, &user, &pass).await?;
+
+    let mut account_indices = Vec::new();
+    if let Some(arr) = res.as_array() {
+        for acc in arr {
+            if let Some(idx) = acc["account"].as_u64() {
+                account_indices.push(idx);
+            }
+        }
+    }
+    // Sort them for the UI
+    account_indices.sort();
+    Ok(account_indices)
+}
+
 // --- WRITE OPERATIONS ---
 
 #[command]
@@ -286,24 +308,48 @@ pub async fn send_transaction(
 
 #[command]
 pub async fn get_new_address(
-    type_param: Option<String>,
+    account_target: Option<u64>,
+    type_param: String,
     host: String,
     port: u16,
     user: String,
     pass: String,
 ) -> Result<String, String> {
-    // If they want a Unified Address (recommended for Juno), we might need to ensure an account exists.
-    // However, z_getnewaddress "unified" is the standard generic way.
-    let addr_type = type_param.unwrap_or("unified".to_string());
+    // CASE A: TRANSPARENT (Mining/Legacy)
+    if type_param == "transparent" {
+        // Juno-specific RPC to generate a t-address
+        let res = call_rpc("t_getminingaddress", vec![], &host, port, &user, &pass).await?;
 
-    let res = call_rpc(
-        "z_getnewaddress",
-        vec![json!(addr_type)],
-        &host,
-        port,
-        &user,
-        &pass,
-    )
-    .await?;
-    Ok(res.as_str().unwrap_or("").to_string())
+        return res
+            .as_str()
+            .map(|s| s.to_string())
+            .ok_or_else(|| "Failed to generate transparent mining address".to_string());
+    }
+
+    // CASE B: UNIFIED (Private/Standard)
+
+    // 1. Determine Account Index
+    let account_index = match account_target {
+        Some(idx) => idx,
+        None => {
+            // Create a brand new account
+            let res = call_rpc("z_getnewaccount", vec![], &host, port, &user, &pass).await?;
+            res["account"]
+                .as_u64()
+                .ok_or("Failed to create new account")?
+        }
+    };
+
+    // 2. Generate Address
+    // Usage: z_getaddressforaccount account
+    // We rely on defaults: receiver_types=["orchard"], diversifier=next_unused
+    let params = vec![json!(account_index)];
+
+    let res = call_rpc("z_getaddressforaccount", params, &host, port, &user, &pass).await?;
+
+    let ua = res["address"]
+        .as_str()
+        .ok_or_else(|| "Failed to generate UA".to_string())?;
+
+    Ok(ua.to_string())
 }
