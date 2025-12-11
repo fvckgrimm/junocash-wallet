@@ -35,7 +35,7 @@
                     type="text" 
                     readonly
                     class="w-full pl-4 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-xs font-mono text-gray-300 truncate focus:outline-none focus:border-indigo-500/50 transition-colors"
-                    placeholder="Not selected"
+                    placeholder="Click browse to select..."
                   />
                 </div>
                 <button 
@@ -58,7 +58,7 @@
                     type="text" 
                     readonly
                     class="w-full pl-4 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-xs font-mono text-gray-300 truncate focus:outline-none focus:border-indigo-500/50 transition-colors"
-                    placeholder="Default directory"
+                    placeholder="Default System Directory (Recommended)"
                   />
                 </div>
                 <button 
@@ -67,6 +67,15 @@
                   title="Browse Folders"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                </button>
+                <!-- Clear Button -->
+                <button 
+                  v-if="dataDir"
+                  @click="dataDir = ''" 
+                  class="px-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/10 rounded-xl text-red-400 transition-all active:scale-95"
+                  title="Reset to Default"
+                >
+                  ✕
                 </button>
               </div>
             </div>
@@ -224,6 +233,7 @@
             <h2 class="text-sm font-bold text-gray-200 uppercase tracking-wider">Security Zone</h2>
           </div>
 
+          <!-- BACKUP CARD -->
           <div class="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <h3 class="text-base font-bold text-white flex items-center gap-2">
@@ -242,6 +252,27 @@
               Reveal Seed Phrase
             </button>
           </div>
+
+          <!-- RESTORE CARD -->
+          <div class="p-6 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                Restore Wallet
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 uppercase">Destructive</span>
+              </h3>
+              <p class="text-sm text-gray-400 mt-2 max-w-lg leading-relaxed">
+                Recover funds using a 24-word seed phrase. <br/>
+                <span class="text-amber-400/80 font-bold">Warning:</span> This will stop your node, backup your existing wallet.dat, and perform a full rescan.
+              </p>
+            </div>
+            <button 
+              @click="wizard.isOpen = true"
+              class="px-6 py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold border border-amber-500/20 hover:border-amber-500/40 transition-all active:scale-95 whitespace-nowrap"
+            >
+              Import Seed
+            </button>
+          </div>
+
         </div>
 
         <!-- SECTION 5: ACTIONS -->
@@ -291,11 +322,11 @@
     </div>
 
     <!-- ========================================== -->
-    <!--          SECURE BACKUP MODAL               -->
+    <!--          BACKUP SEED MODAL                 -->
     <!-- ========================================== -->
     <transition name="modal">
       <div v-if="backupState.isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <!-- Backdrop with Blur -->
+        <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/80 backdrop-blur-xl transition-opacity" @click="closeBackup"></div>
 
         <!-- Modal Content -->
@@ -389,6 +420,104 @@
       </div>
     </transition>
 
+    <!-- ========================================== -->
+    <!--          RECOVERY WIZARD MODAL             -->
+    <!-- ========================================== -->
+    <transition name="modal">
+      <div v-if="wizard.isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-xl transition-opacity" @click="closeWizard"></div>
+
+        <div class="relative bg-[#181B24] w-full max-w-2xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          
+          <!-- Header -->
+          <div class="p-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-white">Wallet Recovery Wizard</h2>
+              <p class="text-xs text-gray-500">Step {{ wizard.step }} of 3</p>
+            </div>
+            <button v-if="wizard.step < 3" @click="closeWizard" class="text-gray-500 hover:text-white">✕</button>
+          </div>
+
+          <!-- STEP 1: SAFETY WARNING -->
+          <div v-if="wizard.step === 1" class="p-8 space-y-6">
+            <div class="flex gap-4 items-start bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
+              <svg class="w-6 h-6 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <div>
+                <h3 class="text-amber-200 font-bold mb-1">Process Overview</h3>
+                <ul class="text-sm text-amber-200/80 list-disc list-inside space-y-1">
+                  <li>Your current node will be stopped.</li>
+                  <li>Your existing <code class="bg-black/30 px-1 rounded">wallet.dat</code> will be automatically backed up.</li>
+                  <li>The node will restart in Maintenance Mode to inject the seed.</li>
+                  <li>Finally, the node will restart normally to begin rescanning.</li>
+                </ul>
+              </div>
+            </div>
+            <p class="text-gray-400 text-sm">
+              Please ensure you have your 24-word seed phrase ready. This process requires a stable internet connection.
+            </p>
+            <div class="flex justify-end">
+               <button @click="wizard.step = 2" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all">
+                 I Understand, Continue
+               </button>
+            </div>
+          </div>
+
+          <!-- STEP 2: INPUT -->
+          <div v-if="wizard.step === 2" class="p-8 space-y-6">
+            <div>
+              <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">24-Word Mnemonic Phrase</label>
+              <textarea 
+                v-model="wizard.mnemonic"
+                class="w-full mt-2 h-32 bg-black/40 border border-white/10 rounded-xl p-4 text-white font-mono text-sm focus:border-indigo-500 outline-none resize-none placeholder-gray-700"
+                placeholder="abandon abandon abandon..."
+              ></textarea>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Birthday Height (Optional)</label>
+              <p class="text-[10px] text-gray-500 mb-2">If you know roughly when this wallet was created, enter the block height to speed up scanning. Leave as 0 to scan from the start.</p>
+              <input 
+                v-model.number="wizard.height"
+                type="number"
+                class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-mono"
+              />
+            </div>
+            <div class="flex justify-between items-center pt-4">
+               <button @click="wizard.step = 1" class="text-gray-500 hover:text-white text-sm">Back</button>
+               <button 
+                 @click="runRecovery" 
+                 :disabled="!wizard.mnemonic.trim()"
+                 class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-900/20"
+               >
+                 Start Recovery
+               </button>
+            </div>
+          </div>
+
+          <!-- STEP 3: EXECUTION LOG -->
+          <div v-if="wizard.step === 3" class="p-0 flex flex-col h-96">
+            <div class="flex-1 bg-black p-6 overflow-y-auto font-mono text-xs space-y-2 custom-scrollbar">
+              <div v-for="(log, i) in wizard.logs" :key="i" class="flex gap-2">
+                <span class="text-gray-600">[{{ log.time }}]</span>
+                <span :class="log.color">{{ log.msg }}</span>
+              </div>
+              <div v-if="wizard.isLoading" class="animate-pulse text-indigo-400 mt-4">_ Processing...</div>
+            </div>
+
+            <div class="p-6 border-t border-white/5 bg-white/[0.02] flex justify-end">
+              <button 
+                v-if="!wizard.isLoading" 
+                @click="closeWizard"
+                class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -413,14 +542,14 @@ const randomxFastMode = ref(false);
 const donationPercent = ref(5);
 const showPass = ref(false);
 
-// UI State
+// UI Status
 const status = reactive({
   state: 'idle', // idle, loading
   type: 'success', // success, error
   message: ''
 });
 
-// Load settings
+// Load settings on mount
 onMounted(async () => {
   await node.loadSettings();
   binPath.value = node.binPath;
@@ -433,7 +562,8 @@ onMounted(async () => {
   donationPercent.value = node.donationPercent;
 });
 
-// Actions
+// --- HELPER FUNCTIONS ---
+
 async function pickBinary() {
   const selected = await open({ multiple: false, directory: false });
   if (selected && typeof selected === 'string') binPath.value = selected;
@@ -467,8 +597,14 @@ function setStatus(type: 'success' | 'error', msg: string) {
   }
 }
 
-// Option A: Launch
+// --- LAUNCH & CONNECT ---
+
 async function launchNode() {
+  if (!binPath.value) {
+    setStatus('error', "Please select the junocashd executable path.");
+    return;
+  }
+
   status.state = 'loading';
   status.message = '';
   
@@ -477,7 +613,7 @@ async function launchNode() {
   try {
     await invoke('launch_node', {
       binPath: binPath.value,
-      dataDir: dataDir.value,
+      dataDir: dataDir.value, // Empty string is handled by Rust as "use default"
       rpcPort: rpcPort.value,
       rpcUser: rpcUser.value,
       rpcPass: rpcPass.value,
@@ -487,7 +623,7 @@ async function launchNode() {
 
     setStatus('success', `Node launch command sent. Donations set to ${donationPercent.value}%.`);
 
-    // Attempt to verify connection shortly after
+    // Verify connection shortly after
     setTimeout(() => {
         wallet.fetchBalance();
     }, 3000);
@@ -497,7 +633,6 @@ async function launchNode() {
   }
 }
 
-// Option B: Connect
 async function connectOnly() {
   status.state = 'loading';
   status.message = '';
@@ -516,7 +651,7 @@ async function connectOnly() {
 }
 
 // ==========================================
-//          BACKUP LOGIC
+//          BACKUP SEED LOGIC
 // ==========================================
 const seedWords = ref<string[]>([]);
 const verifyInput = ref('');
@@ -525,7 +660,7 @@ const verifyError = ref('');
 
 const backupState = reactive({
   isOpen: false,
-  step: 1 // 1=Warning, 2=Display, 3=Verify, 4=Success
+  step: 1 
 });
 
 function startBackupFlow() {
@@ -538,7 +673,7 @@ async function fetchAndShowSeed() {
   try {
     const rawOutput = await wallet.getSeedPhrase();
     
-    // Extract the content between the header and footer markers
+    // Extract the content between markers
     const headerMarker = "=== RECOVERY SEED PHRASE ===";
     const footerMarker = "=== IMPORTANT ===";
     
@@ -550,14 +685,13 @@ async function fetchAndShowSeed() {
       seedPart = rawOutput.substring(headerIndex + headerMarker.length, footerIndex);
     }
     
-    // Split on whitespace and filter out empty strings and marker artifacts
     const words = seedPart
         .trim()
         .split(/\s+/)
         .filter(w => w.length > 0 && !w.includes('==='));
 
     if (words.length !== 24) {
-      throw new Error(`Expected 24 words but found ${words.length}. Please try again.`);
+      throw new Error(`Expected 24 words but found ${words.length}. Is the wallet encrypted?`);
     }
 
     seedWords.value = words;
@@ -578,7 +712,6 @@ function startVerification() {
 function checkVerification() {
   const correctWord = seedWords.value[verifyTargetIndex.value];
   if (verifyInput.value.trim().toLowerCase() === correctWord.toLowerCase()) {
-    // Success - ZERO OUT MEMORY
     seedWords.value = []; 
     backupState.step = 4;
   } else {
@@ -587,11 +720,179 @@ function checkVerification() {
 }
 
 function closeBackup() {
-  // CRITICAL: ZERO OUT DATA
   seedWords.value = [];
   verifyInput.value = '';
   backupState.isOpen = false;
   setTimeout(() => { backupState.step = 1; }, 300);
+}
+
+// ==========================================
+//          RECOVERY WIZARD LOGIC
+// ==========================================
+const wizard = reactive({
+  isOpen: false,
+  step: 1,
+  mnemonic: '',
+  height: 0,
+  isLoading: false,
+  logs: [] as { time: string, msg: string, color: string }[]
+});
+
+function addLog(msg: string, type: 'info' | 'success' | 'error' = 'info') {
+  const time = new Date().toLocaleTimeString().split(' ')[0];
+  const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-emerald-400' : 'text-gray-300';
+  wizard.logs.push({ time, msg, color });
+  // Auto scroll
+  setTimeout(() => {
+    const el = document.querySelector('.custom-scrollbar');
+    if(el) el.scrollTop = el.scrollHeight;
+  }, 10);
+}
+
+function closeWizard() {
+  if (wizard.isLoading) return; 
+  wizard.isOpen = false;
+  setTimeout(() => {
+    wizard.step = 1;
+    wizard.mnemonic = '';
+    wizard.logs = [];
+  }, 500);
+}
+
+async function runRecovery() {
+  wizard.step = 3;
+  wizard.isLoading = true;
+  wizard.logs = [];
+  
+  try {
+    addLog("Initializing recovery sequence...");
+    
+    // --- 1. SAFETY CHECK ---
+    // We can only automate file backups and restarts on the local machine.
+    if (node.rpcHost !== "127.0.0.1" && node.rpcHost !== "localhost") {
+      throw "Automated recovery is only available for local nodes. For remote nodes, please use the CLI.";
+    }
+
+    // --- 2. STOP NODE (Robust) ---
+    addLog("Ensuring node is stopped...", 'info');
+    
+    // Attempt to stop. We don't care if this returns "RPC failed" because the node might already be off.
+    try {
+      await invoke("stop_node", {
+        host: node.rpcHost,
+        port: node.rpcPort,
+        user: node.rpcUser,
+        pass: node.rpcPass
+      });
+    } catch (e) {
+      addLog("Stop command skipped (Node might be offline already).", 'info');
+    }
+
+    // VERIFICATION LOOP: Must confirm node is dead before touching files
+    addLog("Verifying shutdown...", 'info');
+    let isNodeDown = false;
+    for (let i = 0; i < 15; i++) {
+      try {
+        await invoke("get_network_info", { 
+          host: node.rpcHost, port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass 
+        });
+        // If this succeeds, node is still UP. Wait.
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (e) {
+        // If this fails, node is DOWN. Success.
+        isNodeDown = true;
+        break;
+      }
+    }
+
+    if (!isNodeDown) {
+      throw "Could not stop the node. Please close Juno Cash manually and try again.";
+    }
+    
+    // --- 3. BACKUP WALLET (Handles Missing/Fresh cases) ---
+    addLog("Checking for existing wallet...", 'info');
+    // Wait 1s for OS file locks to fully release
+    await new Promise(r => setTimeout(r, 1000)); 
+    
+    // Rust now handles the path resolution logic
+    const backupRes = await invoke<string>("backup_local_wallet", { dataDir: node.dataDir });
+    addLog(backupRes, 'success');
+
+    // --- 4. LAUNCH RECOVERY NODE ---
+    addLog("Launching node in Maintenance Mode (-skipwalletinit)...", 'info');
+    
+    await invoke("launch_recovery_node", {
+      binPath: node.binPath,
+      dataDir: node.dataDir, // Empty string OK -> Rust/Node handles defaults
+      rpcPort: node.rpcPort,
+      rpcUser: node.rpcUser,
+      rpcPass: node.rpcPass
+    });
+
+    // --- 5. WAIT FOR RPC ---
+    addLog("Waiting for RPC interface...", 'info');
+    let connected = false;
+    for (let i = 0; i < 30; i++) {
+       try {
+         await invoke("get_network_info", { 
+           host: node.rpcHost, port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass 
+         });
+         connected = true;
+         break;
+       } catch(e) {
+         await new Promise(r => setTimeout(r, 1000));
+       }
+    }
+    
+    if (!connected) throw "Maintenance node failed to start. Check your binary path settings.";
+    addLog("Maintenance node connected.", 'success');
+
+    // --- 6. EXECUTE RECOVERY ---
+    addLog("Injecting seed phrase...", 'info');
+    const recoverRes = await invoke<string>("recover_wallet", {
+      mnemonic: wizard.mnemonic,
+      birthdayHeight: wizard.height || 0,
+      host: node.rpcHost,
+      port: node.rpcPort,
+      user: node.rpcUser,
+      pass: node.rpcPass
+    });
+    // Recover returns some JSON usually, we can log it or just say success
+    addLog("Seed accepted successfully.", 'success');
+
+    // --- 7. RESTART NORMAL NODE ---
+    addLog("Restarting node in normal mode...", 'info');
+    
+    // Stop maintenance node
+    await invoke("stop_node", {
+      host: node.rpcHost, port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
+    });
+    
+    // Wait for shutdown (crucial before starting again)
+    await new Promise(r => setTimeout(r, 5000));
+
+    // Start normal node
+    await invoke("launch_node", {
+      binPath: node.binPath,
+      dataDir: node.dataDir,
+      rpcPort: node.rpcPort,
+      rpcUser: node.rpcUser,
+      rpcPass: node.rpcPass,
+      randomxFastMode: node.randomxFastMode,
+      donationPercent: node.donationPercent
+    });
+
+    addLog("Recovery Complete! Your node is now rescanning the blockchain.", 'success');
+    addLog("You may close this window. Balances will update as blocks are scanned.");
+
+  } catch (e: any) {
+    const msg = typeof e === 'string' ? e : (e.message || JSON.stringify(e));
+    addLog("CRITICAL ERROR: " + msg, 'error');
+    // Safety: Try to stop node in case we crashed halfway through
+    try { await invoke("stop_node", { host: node.rpcHost, port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass }); } catch(e){}
+  } finally {
+    wizard.isLoading = false;
+  }
 }
 
 onUnmounted(() => {

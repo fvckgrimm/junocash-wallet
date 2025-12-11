@@ -225,6 +225,26 @@ pub async fn get_spendable_addresses(
 // --- WRITE OPERATIONS ---
 
 #[command]
+pub async fn recover_wallet(
+    mnemonic: String,
+    birthday_height: Option<u64>,
+    host: String,
+    port: u16,
+    user: String,
+    pass: String,
+) -> Result<String, String> {
+    let height = birthday_height.unwrap_or(0);
+
+    // z_recoverwallet "mnemonic" ( birthday_height language )
+    let params = vec![json!(mnemonic), json!(height)];
+
+    let res = call_rpc("z_recoverwallet", params, &host, port, &user, &pass).await?;
+
+    // It returns an object with fingerprint, etc. We just need to know it didn't error.
+    Ok(res.to_string())
+}
+
+#[command]
 pub async fn send_transaction(
     from_address: Option<String>,
     targets: Vec<TxTarget>,

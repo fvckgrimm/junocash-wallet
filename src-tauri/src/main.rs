@@ -88,6 +88,8 @@ fn main() {
             node::get_default_juno_paths,
             node::get_network_info,
             node::get_peer_info,
+            node::backup_local_wallet,
+            node::launch_recovery_node,
             // Mining
             mining::get_mining_info,
             mining::get_block_subsidy,
@@ -95,6 +97,7 @@ fn main() {
             mining::shield_coinbase,
             // Wallet
             wallet::get_seed_phrase,
+            wallet::recover_wallet,
             wallet::get_balance,
             wallet::list_transactions,
             wallet::send_transaction,

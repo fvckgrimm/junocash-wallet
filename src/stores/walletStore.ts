@@ -119,6 +119,95 @@ export const useWalletStore = defineStore("wallet", {
       });
     },
 
+    async restoreFromSeed(mnemonic: string, birthdayHeight: number) {
+      const node = useNodeStore();
+
+      // 1. SAFETY CHECK: Localhost only
+      if (node.rpcHost !== "127.0.0.1" && node.rpcHost !== "localhost") {
+        throw new Error("Wallet recovery can only be performed on a local node managed by this wallet.");
+      }
+
+      this.isLoading = true;
+
+      try {
+        // 2. Stop the running node (if any)
+        console.log("Stopping node...");
+        await invoke("stop_node");
+        // Wait a moment for process release
+        await new Promise(r => setTimeout(r, 2000));
+
+        // 3. Backup existing wallet.dat
+        console.log("Backing up wallet.dat...");
+        const backupMsg = await invoke<string>("backup_local_wallet", {
+          dataDir: node.dataDir
+        });
+        console.log(backupMsg);
+
+        // 4. Start Node in Maintenance Mode (-skipwalletinit)
+        console.log("Starting node in Recovery Mode...");
+        await invoke("launch_recovery_node", {
+          binPath: node.binPath,
+          dataDir: node.dataDir,
+          rpcPort: node.rpcPort,
+          rpcUser: node.rpcUser,
+          rpcPass: node.rpcPass
+        });
+
+        // 5. Wait for RPC to be warm (poll for 30 seconds max)
+        let connected = false;
+        for (let i = 0; i < 15; i++) {
+          try {
+            await invoke("get_network_info", {
+              host: node.rpcHost, port: node.rpcPort, user: node.rpcUser, pass: node.rpcPass
+            });
+            connected = true;
+            break;
+          } catch (e) {
+            console.log("Waiting for recovery node...");
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        }
+        if (!connected) throw new Error("Recovery node failed to start RPC interface.");
+
+        // 6. Perform the Recovery Call
+        console.log("Sending Seed Phrase...");
+        await invoke("recover_wallet", {
+          mnemonic,
+          birthdayHeight,
+          host: node.rpcHost,
+          port: node.rpcPort,
+          user: node.rpcUser,
+          pass: node.rpcPass
+        });
+
+        // 7. Stop Maintenance Node
+        console.log("Recovery accepted. Restarting node...");
+        await invoke("stop_node");
+        await new Promise(r => setTimeout(r, 3000));
+
+        // 8. Start Node Normally (Rescan will happen automatically)
+        await invoke("launch_node", {
+          binPath: node.binPath,
+          dataDir: node.dataDir,
+          rpcPort: node.rpcPort,
+          rpcUser: node.rpcUser,
+          rpcPass: node.rpcPass,
+          randomxFastMode: node.randomxFastMode,
+          donationPercent: node.donationPercent
+        });
+
+        this.isLoading = false;
+        return "Recovery initiated. The blockchain is now rescanning.";
+
+      } catch (e: any) {
+        this.isLoading = false;
+        this.lastError = e.toString();
+        // Try to ensure node is stopped if we failed midway so user isn't stuck in limbo
+        await invoke("stop_node");
+        throw e;
+      }
+    },
+
     async fetchAddresses() {
       const node = useNodeStore();
       if (!node.isConnected) return;
